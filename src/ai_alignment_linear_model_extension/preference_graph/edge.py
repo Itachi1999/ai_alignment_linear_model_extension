@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum, auto
 
+
+class PreferenceEdgeType(Enum):
+    """Types of edges in a preference graph."""
+
+    MAJORITY = auto()
+    UNANIMOUS = auto()
 
 @dataclass(frozen=True, slots=True)
 class MajorityEdge:
@@ -11,7 +18,8 @@ class MajorityEdge:
 
     source: int
     target: int
-    weight: float = 1.0
+    weight: float
+    edge_type: PreferenceEdgeType = PreferenceEdgeType.MAJORITY
 
     def __post_init__(self) -> None:
         if self.source == self.target:

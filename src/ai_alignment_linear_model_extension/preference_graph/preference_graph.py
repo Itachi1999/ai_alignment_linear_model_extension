@@ -1,7 +1,11 @@
 from __future__ import annotations
 from copy import deepcopy
 import networkx as nx
-from ai_alignment_linear_model_extension.preference_graph.edge import MajorityEdge as Edge
+import numpy as np
+
+from ai_alignment_linear_model_extension.preference_graph.marginal_matrix import MarginalMatrix, MarginalMatrixBuilder
+from ai_alignment_linear_model_extension.models.election import Election
+from ai_alignment_linear_model_extension.preference_graph.edge import MajorityEdge as Edge, PreferenceEdgeType
 
 
 class PreferenceGraph:
@@ -34,6 +38,7 @@ class PreferenceGraph:
             edge.source,
             edge.target,
             weight=edge.weight,
+            edge_type=edge.edge_type,
         )
 
     # -----------------------------------------------------
@@ -50,7 +55,8 @@ class PreferenceGraph:
             Edge(
                 source=u,
                 target=v,
-                weight=data.get("weight", 1.0),
+                weight=data.get("weight"),
+                edge_type=data.get("edge_type", PreferenceEdgeType.MAJORITY),
             )
             for u, v, data in self._graph.edges(data=True)
         )
@@ -107,3 +113,71 @@ class PreferenceGraph:
             f"num_vertices={self.num_vertices}, "
             f"num_edges={self.num_edges})"
         )
+
+
+
+class PreferenceGraphBuilder:
+    """
+    Builds the preference graph from an election.
+    """
+
+    def __init__(self):
+        self._marginal_matrix_builder = MarginalMatrixBuilder()
+
+    def build(
+        self,
+        election: Election,
+    ) -> PreferenceGraph:
+
+        marginal_matrix = self._marginal_matrix_builder.build(election)
+        return self._build_pmc_graph(marginal_matrix)
+
+    def _build_pmc_graph(
+        self,
+        marginal_matrix: MarginalMatrix,
+    ) -> PreferenceGraph:
+
+        graph = PreferenceGraph()
+
+        graph.add_vertices(
+            marginal_matrix.alternative_ids
+        )
+
+        alternative_ids = marginal_matrix.alternative_ids
+
+        for i, a in enumerate(alternative_ids):
+            for b in alternative_ids[i + 1:]:
+
+                wab = marginal_matrix.weight(a, b)
+                if marginal_matrix.majority_prefers(a, b):
+
+                    edge_type = PreferenceEdgeType.PO if np.isclose(wab, 1.0) else PreferenceEdgeType.PMC
+
+                    graph.add_edge(
+                        Edge(
+                            source=a,
+                            target=b,
+                            weight=wab,
+                            edge_type=edge_type,
+                        )
+                    )
+
+                elif marginal_matrix.majority_prefers(b, a):
+                    wba = marginal_matrix.weight(b, a)
+
+                    edge_type = PreferenceEdgeType.PO if np.isclose(wba, 1.0) else PreferenceEdgeType.PMC
+                    
+
+                    graph.add_edge(
+                        Edge(
+                            source=b,
+                            target=a,
+                            weight=wba,
+                            edge_type=edge_type,
+                        )
+                    )
+
+                else:
+                    # ties -> no edge
+                    pass
+        return graph
