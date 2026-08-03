@@ -41,6 +41,12 @@ class PreferenceGraph:
             edge_type=edge.edge_type,
         )
 
+    def in_degree(self, vertex: int) -> int:
+        return self._graph.in_degree(vertex)
+
+    def out_degree(self, vertex: int) -> int:
+        return self._graph.out_degree(vertex)
+
     # -----------------------------------------------------
     # Properties
     # -----------------------------------------------------
