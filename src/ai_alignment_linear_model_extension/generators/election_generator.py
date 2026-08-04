@@ -1,5 +1,3 @@
-# src/ai_alignment_linear_model_extension/generators/election_generator.py
-
 from __future__ import annotations
 
 from ai_alignment_linear_model_extension.generators.feature_generator import (
