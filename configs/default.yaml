@@ -1,8 +1,9 @@
 defaults:
-  - experiment: exp001_synthetic
-  - data: gaussian
-  - optimization: lp
-  - logging: default
+  - _self_
+  - experiment: experiment1
+  # - data: gaussian
+  # - optimization: lp
+    # - logging: default
 
 hydra:
   run:

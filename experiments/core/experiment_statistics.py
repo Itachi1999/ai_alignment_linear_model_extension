@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 
-from experiments.core.experiment_statistics import ExperimentStatistics
 from experiments.core.trial_result import TrialResult
 
 
@@ -26,11 +26,6 @@ class ExperimentStatistics:
     std_fas_size: float
 
     success_rate: float
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-
 
 
 @dataclass(frozen=True, slots=True)

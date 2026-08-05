@@ -52,7 +52,7 @@ class LinearModelEvaluator:
             if score < self._tolerance:
 
                 violated_edges.append(edge)
-
+                print(f"Violated edge: {edge.source} -> {edge.target}, score: {score}, type: {edge.edge_type}")
                 if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
                     po_violations += 1
                 else:
