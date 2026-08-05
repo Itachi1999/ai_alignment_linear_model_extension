@@ -72,6 +72,7 @@ def main() -> None:
     print("Preference Matrix:")
     print(election.rankings())
     print("\n" + "=" * 60)
+    # print("Margin Matrix")
     print("Preference Graph")
     print("=" * 60)
     print(graph.edges)
@@ -98,13 +99,22 @@ def main() -> None:
 
     print("Theta:")
     print(lp_result.theta)
+    
+    print("Epsilon:")
+    print(lp_result.epsilon)
 
+    print("Sorted Candidate by Rewards:", sorted(
+        ((alternative.id, (lp_result.theta @ alternative.features) + lp_result.epsilon[alternative.id]) for alternative in election.alternatives),
+        key=lambda x: x[1],
+        reverse=True,
+    ))
     print()
 
     print("Violations")
     print(f"Total : {evaluation.num_violations}")
     print(f"PO    : {evaluation.num_po_violations}")
     print(f"PMC   : {evaluation.num_pmc_violations}")
+    print(f"Violated Edges: {evaluation.violated_edges}")
 
     print(
         f"Violation % : "

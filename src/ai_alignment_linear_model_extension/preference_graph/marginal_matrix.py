@@ -94,7 +94,9 @@ class MarginalMatrix:
         # TODO: How to handle 0.5 != 0.5000000000000001 this case here?  SOLVED
         ia = self._id_to_index[a]
         ib = self._id_to_index[b]
-        return np.isclose(self.weight(ia, ib), 0.5) is False and self.weight(ia, ib) > 0.5
+        print(f"ia: {ia}, ib: {ib}, weight(a, b): {self.weight(ia, ib)}, weight(b, a): {self.weight(ib, ia)}")
+        print(f"Majority prefers {a} over {b}: {(not np.isclose(self.weight(ia, ib), 0.5)) and (self.weight(ia, ib) > 0.5)}, weight: {self.weight(ia, ib)}")
+        return (not np.isclose(self.weight(ia, ib), 0.5)) and (self.weight(ia, ib) > 0.5)
 
     def is_tie(self, a: int, b: int) -> bool:
         """

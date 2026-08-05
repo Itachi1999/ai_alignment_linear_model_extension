@@ -136,6 +136,7 @@ class PreferenceGraphBuilder:
     ) -> PreferenceGraph:
 
         marginal_matrix = self._marginal_matrix_builder.build(election)
+        print("Marginal Matrix:", marginal_matrix.matrix)
         return self._build_pmc_graph(marginal_matrix)
 
     def _build_pmc_graph(
@@ -154,10 +155,11 @@ class PreferenceGraphBuilder:
         for i, a in enumerate(alternative_ids):
             for b in alternative_ids[i + 1:]:
 
-                wab = marginal_matrix.weight(a, b)
                 if marginal_matrix.majority_prefers(a, b):
+                    wab = marginal_matrix.weight(a, b)
+                    print(f"Weight of edge {a} -> {b}: {wab}")
 
-                    edge_type = PreferenceEdgeType.PO if np.isclose(wab, 1.0) else PreferenceEdgeType.PMC
+                    edge_type = PreferenceEdgeType.UNANIMOUS if np.isclose(wab, 1.0) else PreferenceEdgeType.MAJORITY
 
                     graph.add_edge(
                         Edge(
@@ -170,9 +172,8 @@ class PreferenceGraphBuilder:
 
                 elif marginal_matrix.majority_prefers(b, a):
                     wba = marginal_matrix.weight(b, a)
-
-                    edge_type = PreferenceEdgeType.PO if np.isclose(wba, 1.0) else PreferenceEdgeType.PMC
-                    
+                    print(f"Weight of edge {b} -> {a}: {wba}")
+                    edge_type = PreferenceEdgeType.UNANIMOUS if np.isclose(wba, 1.0) else PreferenceEdgeType.MAJORITY
 
                     graph.add_edge(
                         Edge(
