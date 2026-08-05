@@ -9,9 +9,7 @@ from ai_alignment_linear_model_extension.evaluation.linear_model_evaluator impor
 
 def main() -> None:
 
-    # --------------------------------------------------
     # Generate synthetic election
-    # --------------------------------------------------
 
     generator = ElectionGenerator(
         feature_generator=GaussianFeatureGenerator(),
@@ -24,32 +22,24 @@ def main() -> None:
         dimension=2,
     )
 
-    # --------------------------------------------------
     # Build preference graph
-    # --------------------------------------------------
 
     graph = PreferenceGraphBuilder().build(election)
 
-    # --------------------------------------------------
     # Remove cycles
-    # --------------------------------------------------
 
     fas_result = FeedbackArcSetSolver().solve(graph)
 
     dag = fas_result.dag
 
-    # --------------------------------------------------
     # Solve LP
-    # --------------------------------------------------
 
     lp_result = LinearModelSolver().solve(
         election,
         dag,
     )
 
-    # --------------------------------------------------
-    # Evaluate θ only
-    # --------------------------------------------------
+    # Evaluate $\theta$ only
 
     evaluation = LinearModelEvaluator().evaluate(
         election,
@@ -57,9 +47,7 @@ def main() -> None:
         lp_result,
     )
 
-    # --------------------------------------------------
     # Print summary
-    # --------------------------------------------------
 
     print("=" * 50)
     print("Synthetic Election Summary")
