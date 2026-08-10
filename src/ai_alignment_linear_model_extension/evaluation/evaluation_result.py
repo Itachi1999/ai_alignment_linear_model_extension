@@ -22,4 +22,9 @@ class EvaluationResult:
     po_violation_percentage: float
     pmc_violation_percentage: float
 
+    # Epsilon support
+    epsilon_support: tuple[int, ...]
+    num_nonzero_epsilon: int
+    epsilon_sparsity: float
+
     violated_edges: tuple[Edge, ...]

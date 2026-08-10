@@ -40,6 +40,14 @@ class LinearModelEvaluator:
         po_violations = 0
         pmc_violations = 0
 
+        epsilon = result.epsilon
+
+        epsilon_support = tuple(
+            alternative.id
+            for alternative in election.alternatives
+            if abs(epsilon[alternative.id]) > self._tolerance
+        )
+
         for edge in graph.edges:
 
             score = float(
@@ -75,6 +83,12 @@ class LinearModelEvaluator:
             num_pmc_constraints=total_pmc,
             num_po_violations=po_violations,
             num_pmc_violations=pmc_violations,
+            epsilon_support=epsilon_support,
+            num_nonzero_epsilon=len(epsilon_support),
+            epsilon_sparsity=(
+                len(epsilon_support) / len(election.alternatives)
+                if election.alternatives else 0.0
+            ),
             violation_percentage=100 * total_violations / total if total else 0.0,
             po_violation_percentage=100 * po_violations / total_po if total_po else 0.0,
             pmc_violation_percentage=100 * pmc_violations / total_pmc if total_pmc else 0.0,
