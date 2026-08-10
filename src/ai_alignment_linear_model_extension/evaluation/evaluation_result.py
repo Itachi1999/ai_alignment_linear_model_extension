@@ -22,9 +22,15 @@ class EvaluationResult:
     po_violation_percentage: float
     pmc_violation_percentage: float
 
+    violated_edges: tuple[Edge, ...]
+
     # Epsilon support
     epsilon_support: tuple[int, ...]
     num_nonzero_epsilon: int
-    epsilon_sparsity: float
+    epsilon_support_percentage: float
+    # epsilon_sparsity: float = property(lambda self: 1 - self.epsilon_support_percentage)
 
-    violated_edges: tuple[Edge, ...]
+    @property
+    def epsilon_sparsity(self) -> float:
+        return 1 - self.epsilon_support_percentage
+

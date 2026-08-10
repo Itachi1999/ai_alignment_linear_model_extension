@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import logging
 from pathlib import Path
 from statistics import mean, stdev, fmean
 import hydra
@@ -145,6 +147,20 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
             for trial in trials
         ]
 
+        epsilon_support_percentages = [
+            trial.evaluation_result.epsilon_support_percentage
+            for trial in trials
+        ]
+
+        epsilon_sparsities = [
+            trial.evaluation_result.epsilon_sparsity
+            for trial in trials
+        ]
+        successful_trials = [
+            trial for trial in trials
+            if trial.success
+        ]
+
         statistics = ExperimentStatistics(
             num_trials=len(trials),
 
@@ -163,12 +179,22 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
             mean_fas_size=mean(fas_sizes),
             std_fas_size=stdev(fas_sizes),
 
+            mean_epsilon_support_percentage=mean(epsilon_support_percentages),
+            std_epsilon_support_percentage=stdev(epsilon_support_percentages),
+
+            mean_epsilon_sparsity=mean(epsilon_sparsities),
+            std_epsilon_sparsity=stdev(epsilon_sparsities),
+
+            # success_rate = (
+            #     sum(
+            #         trial.evaluation_result.num_violations == 0
+            #         for trial in trials
+            #     )
+            #     / len(trials)
+            # ),
             success_rate = (
-                sum(
-                    trial.evaluation_result.num_violations == 0
-                    for trial in trials
-                )
-                / len(trials)
+                len(successful_trials) / len(trials)
+                if trials else 0.0
             ),
         )
 
@@ -189,6 +215,12 @@ def main(cfg: DictConfig) -> None:
     # print(f"Configuration:\n{cfg.pretty()}")
     experiment = LinearThetaExpressibilityExperiment(exp_cfg)
 
+    output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+
+    logger = ExperimentLogger()
+    logger.setup_logging(output_dir)
+    logging.info("Starting %s", exp_cfg.name)
+
     runner = ExperimentRunner()
     result = runner.run(
         experiment=experiment,
@@ -196,13 +228,18 @@ def main(cfg: DictConfig) -> None:
         seed=exp_cfg.seed,
     )
 
-    logger = ExperimentLogger()
+    logger.save(
+        result=result,
+        config=cfg,
+        output_dir=output_dir,
+    )
 
-    output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+    logging.info("Experiment completed.")
 
-    logger.save_summary(result, output_dir)
-    logger.save_trials(result, output_dir)
-    logger.save_config(exp_cfg, output_dir)
+
+    # logger.save_summary(result, output_dir)
+    # logger.save_trials(result, output_dir)
+    # logger.save_config(exp_cfg, output_dir)
 
 
 if __name__ == "__main__":

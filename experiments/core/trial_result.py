@@ -21,3 +21,5 @@ class TrialResult:
     fas_size: int
 
     timers: tuple[TimerResult, ...]
+    error: str | None = None
+    success: bool = True

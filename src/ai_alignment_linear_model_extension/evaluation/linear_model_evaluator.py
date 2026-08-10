@@ -60,7 +60,7 @@ class LinearModelEvaluator:
             if score < self._tolerance:
 
                 violated_edges.append(edge)
-                print(f"Violated edge: {edge.source} -> {edge.target}, score: {score}, type: {edge.edge_type}")
+                # print(f"Violated edge: {edge.source} -> {edge.target}, score: {score}, type: {edge.edge_type}")
                 if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
                     po_violations += 1
                 else:
@@ -85,7 +85,7 @@ class LinearModelEvaluator:
             num_pmc_violations=pmc_violations,
             epsilon_support=epsilon_support,
             num_nonzero_epsilon=len(epsilon_support),
-            epsilon_sparsity=(
+            epsilon_support_percentage=(
                 len(epsilon_support) / len(election.alternatives)
                 if election.alternatives else 0.0
             ),

@@ -25,6 +25,12 @@ class ExperimentStatistics:
     mean_fas_size: float
     std_fas_size: float
 
+    mean_epsilon_support_percentage: float
+    std_epsilon_support_percentage: float
+
+    mean_epsilon_sparsity: float
+    std_epsilon_sparsity: float
+
     success_rate: float
 
 
