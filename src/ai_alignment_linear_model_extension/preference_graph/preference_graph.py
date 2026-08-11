@@ -75,6 +75,20 @@ class PreferenceGraph:
     def num_edges(self) -> int:
         return self._graph.number_of_edges()
 
+    @property
+    def num_po_edges(self) -> int:
+        return sum(
+            1 for _, _, data in self._graph.edges(data=True)
+            if data.get("edge_type") == PreferenceEdgeType.UNANIMOUS
+        )
+
+    @property
+    def num_pmc_edges(self) -> int:
+        return sum(
+            1 for _, _, data in self._graph.edges(data=True)
+            if data.get("edge_type") == PreferenceEdgeType.MAJORITY
+        )
+
     # -----------------------------------------------------
     # Graph algorithms
     # -----------------------------------------------------

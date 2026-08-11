@@ -25,12 +25,12 @@ class EvaluationResult:
     violated_edges: tuple[Edge, ...]
 
     # Epsilon support
-    epsilon_support: tuple[int, ...]
-    num_nonzero_epsilon: int
-    epsilon_support_percentage: float
+    epsilon_support: tuple[int, ...] | None = None # These are having default None because they are not always computed in the evaluation (like in the case of BTL model), but can be added later if needed.
+    num_nonzero_epsilon: int | None = None
+    epsilon_support_percentage: float | None = None
     # epsilon_sparsity: float = property(lambda self: 1 - self.epsilon_support_percentage)
 
     @property
-    def epsilon_sparsity(self) -> float:
-        return 1 - self.epsilon_support_percentage
+    def epsilon_sparsity(self) -> float | None:
+        return 1 - self.epsilon_support_percentage if self.epsilon_support_percentage is not None else None
 

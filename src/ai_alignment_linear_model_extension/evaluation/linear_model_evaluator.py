@@ -69,18 +69,18 @@ class LinearModelEvaluator:
         total = len(graph.edges)
         total_violations = len(violated_edges)
 
-        total_po = sum(
-            edge.edge_type == PreferenceEdgeType.UNANIMOUS
-            for edge in graph.edges
-        )
+        # total_po = sum(
+        #     edge.edge_type == PreferenceEdgeType.UNANIMOUS
+        #     for edge in graph.edges
+        # )
 
-        total_pmc = total - total_po
+        # total_pmc = total - total_po
 
         return EvaluationResult(
             num_constraints=total,
             num_violations=total_violations,
-            num_po_constraints=total_po,
-            num_pmc_constraints=total_pmc,
+            num_po_constraints=graph.num_po_edges,
+            num_pmc_constraints=graph.num_pmc_edges,
             num_po_violations=po_violations,
             num_pmc_violations=pmc_violations,
             epsilon_support=epsilon_support,
@@ -90,7 +90,7 @@ class LinearModelEvaluator:
                 if election.alternatives else 0.0
             ),
             violation_percentage=100 * total_violations / total if total else 0.0,
-            po_violation_percentage=100 * po_violations / total_po if total_po else 0.0,
-            pmc_violation_percentage=100 * pmc_violations / total_pmc if total_pmc else 0.0,
+            po_violation_percentage=100 * po_violations / graph.num_po_edges if graph.num_po_edges else 0.0,
+            pmc_violation_percentage=100 * pmc_violations / graph.num_pmc_edges if graph.num_pmc_edges else 0.0,
             violated_edges=tuple(violated_edges),
         )
