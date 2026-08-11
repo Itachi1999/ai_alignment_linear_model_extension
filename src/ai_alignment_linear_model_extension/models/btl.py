@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import numpy as np
+import scipy
 from scipy.optimize import minimize
 
 from ai_alignment_linear_model_extension.preference_graph.marginal_matrix import MarginalMatrix
@@ -56,7 +57,7 @@ class BTLModel:
         float
             The probability of alt1 being preferred over alt2.
         """
-        prob = np.exp(score1) / (np.exp(score1) + np.exp(score2))
+        prob = scipy.special.expit(score1 - score2)
         return prob
 
     def log_likelihood(self, scores: dict[int, float]) -> float:
@@ -139,7 +140,7 @@ class BTLModel:
 
         return BTLResult(
             scores=self.scores.copy(),
-            log_likelihood=-float(result.fun),
+            log_likelihood=float(result.fun),
             converged=bool(result.success),
             iterations=int(result.nit),
         )

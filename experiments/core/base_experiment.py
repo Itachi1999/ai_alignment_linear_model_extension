@@ -76,7 +76,6 @@ class ExperimentRunner:
                 seed=seed,
                 success=False,
                 error=str(e),
-                lp_result=None,
                 evaluation_result=None,
                 fas_size=None,
                 timers=(),
@@ -142,7 +141,9 @@ class ExperimentLogger:
                 "trial": trial.trial,
                 "seed": trial.seed,
 
-                "objective": trial.lp_result.objective_value,
+                "objective": trial.evaluation_result.objective_value,
+                "loss_value": trial.evaluation_result.loss_value,
+                
                 "fas_size": trial.fas_size,
 
                 "num_violations": evaluation.num_violations,

@@ -30,6 +30,9 @@ class EvaluationResult:
     epsilon_support_percentage: float | None = None
     # epsilon_sparsity: float = property(lambda self: 1 - self.epsilon_support_percentage)
 
+    objective_value: float | None = None
+    loss_value: float | None = None
+
     @property
     def epsilon_sparsity(self) -> float | None:
         return 1 - self.epsilon_support_percentage if self.epsilon_support_percentage is not None else None

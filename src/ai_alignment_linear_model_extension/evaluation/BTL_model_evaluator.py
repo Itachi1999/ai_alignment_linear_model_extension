@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import numpy as np
+import scipy
 
 from ai_alignment_linear_model_extension.evaluation.evaluation_result import (
     EvaluationResult,
 )
-from ai_alignment_linear_model_extension.models.election import Election
-from ai_alignment_linear_model_extension.models.btl import BTLResult, BTLModel
+# from ai_alignment_linear_model_extension.models.election import Election
+from ai_alignment_linear_model_extension.models.btl import BTLResult
 from ai_alignment_linear_model_extension.preference_graph.edge import (
     PreferenceEdgeType,
 )
@@ -41,10 +42,8 @@ class BTLModelEvaluator:
 
             score1 = result.scores.get(edge.source, 0.0)
             score2 = result.scores.get(edge.target, 0.0)
-
-            prob = result.model.probability(score1, score2)
-
-            if np.isclose(prob, 0.5, atol=self._tolerance) or prob < 0.5:
+            prob = scipy.special.expit(score1 - score2)
+            if np.isclose(prob, 0.5) or (prob < 0.5):
                 violated_edges.append(edge)
                 if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
                     po_violations += 1
@@ -55,13 +54,13 @@ class BTLModelEvaluator:
         num_violations = len(violated_edges)
 
         violation_percentage = (
-            num_violations / num_constraints if num_constraints > 0 else 0.0
+            100 * num_violations / num_constraints if num_constraints > 0 else 0.0
         )
         po_violation_percentage = (
-            po_violations / graph.num_po_edges if graph.num_po_edges > 0 else 0.0
+            100 * po_violations / graph.num_po_edges if graph.num_po_edges > 0 else 0.0
         )
         pmc_violation_percentage = (
-            pmc_violations / graph.num_pmc_edges if graph.num_pmc_edges > 0 else 0.0
+            100 * pmc_violations / graph.num_pmc_edges if graph.num_pmc_edges > 0 else 0.0
         )
 
         return EvaluationResult(
@@ -75,4 +74,5 @@ class BTLModelEvaluator:
             po_violation_percentage=po_violation_percentage,
             pmc_violation_percentage=pmc_violation_percentage,
             violated_edges=tuple(violated_edges),
+            loss_value=result.log_likelihood 
         )

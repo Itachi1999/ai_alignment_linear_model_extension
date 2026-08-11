@@ -139,11 +139,11 @@ class PreferenceGraphBuilder:
     def build(
         self,
         election: Election,
-    ) -> PreferenceGraph:
+    ) -> tuple[MarginalMatrix, PreferenceGraph]:
 
         marginal_matrix = self._marginal_matrix_builder.build(election)
         # print("Marginal Matrix:", marginal_matrix.matrix)
-        return self._build_pmc_graph(marginal_matrix)
+        return marginal_matrix, self._build_pmc_graph(marginal_matrix)
 
     def _build_pmc_graph(
         self,

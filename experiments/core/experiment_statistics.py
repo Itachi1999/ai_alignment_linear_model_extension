@@ -10,29 +10,32 @@ from experiments.core.trial_result import TrialResult
 class ExperimentStatistics:
     num_trials: int
 
-    mean_objective: float
-    std_objective: float
+    mean_violation_percentage: float
+    std_violation_percentage: float
 
-    mean_violation: float
-    std_violation: float
+    mean_po_violation_percentage: float
+    std_po_violation_percentage: float
 
-    mean_po_violation: float
-    std_po_violation: float
-
-    mean_pmc_violation: float
-    std_pmc_violation: float
+    mean_pmc_violation_percentage: float
+    std_pmc_violation_percentage: float
 
     mean_fas_size: float
     std_fas_size: float
 
-    mean_epsilon_support_percentage: float
-    std_epsilon_support_percentage: float
-
-    mean_epsilon_sparsity: float
-    std_epsilon_sparsity: float
-
     success_rate: float
 
+    mean_epsilon_support_percentage: float | None = None
+    std_epsilon_support_percentage: float | None = None
+
+    mean_epsilon_sparsity: float | None = None
+    std_epsilon_sparsity: float | None = None
+
+    mean_loss: float | None = None
+    std_loss: float | None = None
+
+    mean_objective: float | None = None
+    std_objective: float | None = None
+    
 
 @dataclass(frozen=True, slots=True)
 class ExperimentResult:

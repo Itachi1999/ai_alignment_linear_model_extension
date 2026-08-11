@@ -93,4 +93,5 @@ class LinearModelEvaluator:
             po_violation_percentage=100 * po_violations / graph.num_po_edges if graph.num_po_edges else 0.0,
             pmc_violation_percentage=100 * pmc_violations / graph.num_pmc_edges if graph.num_pmc_edges else 0.0,
             violated_edges=tuple(violated_edges),
+            objective_value=result.objective_value,
         )

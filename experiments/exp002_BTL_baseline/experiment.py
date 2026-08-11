@@ -24,10 +24,10 @@ from ai_alignment_linear_model_extension.generators.preference_generator import 
 from ai_alignment_linear_model_extension.generators.election_generator import  ElectionGenerator
 from ai_alignment_linear_model_extension.preference_graph.preference_graph import PreferenceGraphBuilder
 from ai_alignment_linear_model_extension.preference_graph.FAS import FeedbackArcSetSolver
-from ai_alignment_linear_model_extension.optimization.extension_linear_model import LinearModelSolver
-from ai_alignment_linear_model_extension.evaluation.linear_model_evaluator import LinearModelEvaluator
+from ai_alignment_linear_model_extension.models.btl import BTLModel, BTLResult
+from ai_alignment_linear_model_extension.evaluation.BTL_model_evaluator import BTLModelEvaluator
 
-class LinearThetaExpressibilityExperiment(BaseExperiment):
+class BTLBaselineEvaluation(BaseExperiment):
     """ 
     This class implements a synthetic experiment to test the expressibility of LP generated theta against the LP generated theta and epsilon.
     """
@@ -51,17 +51,12 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
 
         self._fas_solver = FeedbackArcSetSolver()
 
-        # Optimization parameter is unused in the LinearModelSolver, but we keep it for consistency with other experiments.
-        self._lp_solver = LinearModelSolver(
-            eta=self._cfg.optimization.eta,
-            solver=self._cfg.optimization.solver,
-        )   
 
         self._graph_builder = PreferenceGraphBuilder()
 
         self._fas_solver = FeedbackArcSetSolver()
 
-        self._evaluator = LinearModelEvaluator()
+        self._evaluator = BTLModelEvaluator()
 
     def run_trial(
         self,
@@ -81,32 +76,32 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
         timers.append(timer.result)
 
         with Timer("Graph Construction") as timer:
-            _, graph = self._graph_builder.build(election)
+            marginal_matrix, graph = self._graph_builder.build(election)
         timers.append(timer.result)
 
         with Timer("Feedback Arc Set") as timer:
             fas_result = self._fas_solver.solve(graph)
         timers.append(timer.result)
 
-        with Timer("LP Solve") as timer:
-            lp_result = self._lp_solver.solve(
-                election,
-                fas_result.dag,
+        with Timer("BTL Model Fitting") as timer:
+            blt_model = BTLModel(
+                marginal_matrix=marginal_matrix,
+                scores = {alt.id: 0.0 for alt in election.alternatives},
+                num_voters=self._cfg.data.num_voters,
             )
+            btl_result = blt_model.fit(max_iter=self._cfg.optimization.max_iterations, tol=self._cfg.optimization.tolerance)
         timers.append(timer.result)
 
         with Timer("Evaluation") as timer:
             evaluation = self._evaluator.evaluate(
-                election,
                 fas_result.dag,
-                lp_result,
+                btl_result,
             )
         timers.append(timer.result)
 
         return TrialResult(
             trial=trial,
             seed=seed,
-            # lp_result=lp_result,
             evaluation_result=evaluation,
             fas_size=len(fas_result.removed_edges),
             timers=tuple(timers),
@@ -117,9 +112,9 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
         trials: list[TrialResult],
     ) -> ExperimentResult:
 
-        # For this experiment, we will summarize the objective values, violation percentages, and other relevant metrics across all trials.
-        objectives = [
-            trial.evaluation_result.objective_value
+        # For this experiment, we will summarize the loss values, violation percentages, and other relevant metrics across all trials.
+        losses = [
+            trial.evaluation_result.loss_value
             for trial in trials
         ]
 
@@ -143,15 +138,15 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
             for trial in trials
         ]
 
-        epsilon_support_percentages = [
-            trial.evaluation_result.epsilon_support_percentage
-            for trial in trials
-        ]
+        # epsilon_support_percentages = [
+        #     trial.evaluation_result.epsilon_support_percentage
+        #     for trial in trials
+        # ]
 
-        epsilon_sparsities = [
-            trial.evaluation_result.epsilon_sparsity
-            for trial in trials
-        ]
+        # epsilon_sparsities = [
+        #     trial.evaluation_result.epsilon_sparsity
+        #     for trial in trials
+        # ]
         successful_trials = [
             trial for trial in trials
             if trial.success
@@ -160,8 +155,8 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
         statistics = ExperimentStatistics(
             num_trials=len(trials),
 
-            mean_objective=fmean(objectives),
-            std_objective=stdev(objectives),
+            mean_loss=fmean(losses),
+            std_loss=stdev(losses),
 
             mean_violation_percentage=mean(violations),
             std_violation_percentage=stdev(violations),
@@ -175,11 +170,11 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
             mean_fas_size=mean(fas_sizes),
             std_fas_size=stdev(fas_sizes),
 
-            mean_epsilon_support_percentage=mean(epsilon_support_percentages),
-            std_epsilon_support_percentage=stdev(epsilon_support_percentages),
+            # mean_epsilon_support_percentage=mean(epsilon_support_percentages),
+            # std_epsilon_support_percentage=stdev(epsilon_support_percentages),
 
-            mean_epsilon_sparsity=mean(epsilon_sparsities),
-            std_epsilon_sparsity=stdev(epsilon_sparsities),
+            # mean_epsilon_sparsity=mean(epsilon_sparsities),
+            # std_epsilon_sparsity=stdev(epsilon_sparsities),
 
             # success_rate = (
             #     sum(
@@ -209,7 +204,7 @@ def main(cfg: DictConfig) -> None:
     exp_cfg = cfg.experiment
     print(f"Running experiment: {exp_cfg.name}")
     # print(f"Configuration:\n{cfg.pretty()}")
-    experiment = LinearThetaExpressibilityExperiment(exp_cfg)
+    experiment = BTLBaselineEvaluation(exp_cfg)
 
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
 
