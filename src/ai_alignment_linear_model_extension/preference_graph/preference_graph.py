@@ -20,9 +20,7 @@ class PreferenceGraph:
     def __init__(self) -> None:
         self._graph = nx.DiGraph()
 
-    # -----------------------------------------------------
     # Basic graph construction
-    # -----------------------------------------------------
 
     def add_vertex(self, vertex: int) -> None:
         """Add a vertex."""
@@ -47,9 +45,7 @@ class PreferenceGraph:
     def out_degree(self, vertex: int) -> int:
         return self._graph.out_degree(vertex)
 
-    # -----------------------------------------------------
     # Properties
-    # -----------------------------------------------------
 
     @property
     def vertices(self) -> tuple[int, ...]:
@@ -89,9 +85,7 @@ class PreferenceGraph:
             if data.get("edge_type") == PreferenceEdgeType.MAJORITY
         )
 
-    # -----------------------------------------------------
     # Graph algorithms
-    # -----------------------------------------------------
 
     def is_dag(self) -> bool:
         """Return True iff the graph is acyclic."""
@@ -110,9 +104,7 @@ class PreferenceGraph:
     def predecessors(self, vertex: int) -> tuple[int, ...]:
         return tuple(self._graph.predecessors(vertex))
 
-    # -----------------------------------------------------
     # Utilities
-    # -----------------------------------------------------
 
     def copy(self) -> "PreferenceGraph":
         new_graph = PreferenceGraph()
