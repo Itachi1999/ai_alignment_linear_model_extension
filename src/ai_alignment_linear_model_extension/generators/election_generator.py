@@ -48,7 +48,7 @@ class ElectionGenerator:
         # Generate voters
         voters = self._preference_generator.generate(
             num_voters=num_voters,
-            alternative_ids=alternative_ids,
+            alternatives=alternatives,
         )
 
         # Construct validated election

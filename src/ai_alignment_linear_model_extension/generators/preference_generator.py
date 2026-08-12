@@ -5,6 +5,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 
 from ai_alignment_linear_model_extension.models.voter import Voter
+from ai_alignment_linear_model_extension.models.alternative import Alternative
 
 
 class PreferenceGenerator(ABC):
@@ -16,7 +17,7 @@ class PreferenceGenerator(ABC):
     def generate(
         self,
         num_voters: int,
-        alternative_ids: tuple[int, ...],
+        alternatives: tuple[Alternative, ...],
     ) -> tuple[Voter, ...]:
         """
         Generate preferences for voters.
@@ -26,8 +27,8 @@ class PreferenceGenerator(ABC):
         num_voters : int
             Number of voters.
 
-        alternative_ids : tuple[int, ...]
-            IDs of all alternatives.
+        alternatives : tuple[Alternative, ...]
+            Tuple of all alternatives.
 
         Returns
         -------
@@ -48,13 +49,14 @@ class UniformPreferenceGenerator(PreferenceGenerator):
     def generate(
         self,
         num_voters: int,
-        alternative_ids: tuple[int, ...],
+        alternatives: tuple[Alternative, ...],
     ) -> tuple[Voter, ...]:
 
         if num_voters <= 0:
             raise ValueError("Number of voters must be positive.")
 
         voters = []
+        alternative_ids = tuple(alt.id for alt in alternatives)
 
         for voter_id in range(num_voters):
 
@@ -66,6 +68,71 @@ class UniformPreferenceGenerator(PreferenceGenerator):
                 Voter(
                     id=voter_id,
                     ranking=ranking,
+                )
+            )
+
+        return tuple(voters)
+    
+
+
+class LinearPreferenceGenerator:
+    def __init__(
+        self,
+        theta_0: np.ndarray,
+        noise_std: float,
+        noisy_alternative_fraction: float,
+        seed: int | None = None,
+    ) -> None:
+        if not 0.0 <= noisy_alternative_fraction<= 1.0:
+            raise ValueError("noisy_voter_fraction must be in [0, 1].")
+
+        self.theta_0 = theta_0
+        self.noise_std = noise_std
+        self.noisy_alternative_fraction = noisy_alternative_fraction
+        self.rng = np.random.default_rng(seed)
+
+    def generate(
+        self,
+        alternatives: tuple[Alternative, ...],
+        num_voters: int,
+    ) -> tuple[Voter, ...]:
+
+        if num_voters <= 0:
+            raise ValueError("Number of voters must be positive.")
+
+        num_alternatives = len(alternatives)
+        voters = []
+
+        # Linear utility: <theta_0, x_a>
+        utility = {
+            alt.id : self.theta_0 @ alt.features
+            for alt in alternatives
+        }
+
+        num_noisy = int(
+            round(num_alternatives * self.noisy_voter_fraction)
+        )
+
+        for voter_id in range(num_voters):
+            noisy_alternative_ids = set(
+                self.rng.choice(
+                    utility.keys(),
+                    size=num_noisy,
+                    replace=False,
+                )
+            )
+            
+            for alt_id in noisy_alternative_ids:
+                utility[alt_id] += self.rng.normal(
+                    loc=0.0,
+                    scale=self.noise_std,
+                )
+
+            ranking = tuple(sorted(utility, key=utility.get, reverse=True))
+            voters.append(
+                Voter(
+                    id = voter_id,
+                    ranking=ranking
                 )
             )
 
