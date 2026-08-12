@@ -110,13 +110,13 @@ class LinearPreferenceGenerator:
         }
 
         num_noisy = int(
-            round(num_alternatives * self.noisy_voter_fraction)
+            round(num_alternatives * self.noisy_alternative_fraction)
         )
 
         for voter_id in range(num_voters):
             noisy_alternative_ids = set(
                 self.rng.choice(
-                    utility.keys(),
+                    tuple(utility.keys()),
                     size=num_noisy,
                     replace=False,
                 )

@@ -1,0 +1,24 @@
+name: exp004_BTL_baseline_linear_preference
+summary: Baseline experiment with BTL model. We check that how much PO and PMC rules does the BTL model violates. Here preference is linear ranking.
+
+num_trials: 100
+seed: 42
+
+data:
+  num_voters: 11
+  num_alternatives: 4
+  dimension: 2
+  mean: 0.0
+  std: 1.0
+  noisy_alternative_fraction: 1.0
+  noise_std: 1.0
+
+optimization:
+  max_iterations: 10000
+  tolerance: 1e-6
+
+logging:
+  save_summary: true
+  save_trials: true
+  save_figures: true
+  save_tables: true

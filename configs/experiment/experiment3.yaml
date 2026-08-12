@@ -1,0 +1,24 @@
+name: exp003_linear_preference_theta_experiemnt
+summary: Synthetic experiment with Gaussian candidate data and linear programming optimization. Here we are testing the performance of the LP generated theta against the LP generated theta and epsilon. The difference between this and the first experiment is that here voter rankings are generated using linear preference.
+
+num_trials: 100
+seed: 42
+
+data:
+  num_voters: 11
+  num_alternatives: 4
+  dimension: 2
+  mean: 0.0
+  std: 1.0
+  noisy_alternative_fraction: 1.0
+  noise_std: 1.0
+
+optimization:
+  eta: 1e-6
+  solver: HIGHS
+
+logging:
+  save_summary: true
+  save_trials: true
+  save_figures: true
+  save_tables: true
