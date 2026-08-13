@@ -12,50 +12,53 @@ from ai_alignment_linear_model_extension.optimization.lp_result import (
 )
 
 
-class LinearModelSolver:
+
+class NewLinearModelSolver:
     """
-    Solves the linear preference learning LP.
+    Solves the new LP with pairwise inversion variables z_ab.
     """
 
     def __init__(
         self,
         eta: float = 1e-6,
+        lambda_: float = 1.0,
         solver: str = cp.HIGHS,
     ) -> None:
-        """Constructor method of the LinearModelSolver class
-
-        Args:
-            eta (float, optional): Margin for the preference constraints. Defaults to 1e-6.
-            solver (str, optional): The optimization solver to use. Defaults to "HIGHS".
-        """
         self._eta = eta
+        self._lambda = lambda_
         self._solver = solver
 
     def solve(
         self,
         election: Election,
         graph: PreferenceGraph,
-    ) -> LPResult:
+    ) -> NewLPResult:
 
         d = election.dimension
-
-        # --------------------------------------------------
-        # Cache feature vectors
-        # --------------------------------------------------
 
         features = {
             alternative.id: alternative.features
             for alternative in election.alternatives
         }
 
+        features_list = [
+            alternative.features
+            for alternative in election.alternatives
+        ]
+
+        delta = max(
+            np.linalg.norm(x_a - x_b)
+            for i, x_a in enumerate(features_list)
+            for x_b in features[i + 1:]
+        )
+
+        self._L = np.sqrt(d) * delta
+
         # --------------------------------------------------
-        # Decision variables
+        # Variables
         # --------------------------------------------------
 
-        theta = cp.Variable(
-            shape=d,
-            name="theta",
-        )
+        theta = cp.Variable(d, name="theta")
 
         epsilon = {
             alternative.id: cp.Variable(
@@ -67,9 +70,17 @@ class LinearModelSolver:
         t = {
             alternative.id: cp.Variable(
                 nonneg=True,
-                name=f"t_{alternative.id}"
+                name=f"t_{alternative.id}",
             )
             for alternative in election.alternatives
+        }
+
+        z = {
+            (edge.source, edge.target): cp.Variable(
+                nonneg=True,
+                name=f"z_{edge.source}_{edge.target}",
+            )
+            for edge in graph.edges
         }
 
         # --------------------------------------------------
@@ -78,80 +89,89 @@ class LinearModelSolver:
 
         constraints: list[cp.Constraint] = []
 
-        # Preference graph constraints
-
         for edge in graph.edges:
 
-            x_a = features[edge.source]
-            x_b = features[edge.target]
+            a = edge.source
+            b = edge.target
 
+            x_a = features[a]
+            x_b = features[b]
+
+            linear_score = theta @ (x_a - x_b)
+
+            # Original preference constraint
             constraints.append(
-                (theta @ (x_a - x_b))
-                + (epsilon[edge.source]
-                - epsilon[edge.target])
+                linear_score
+                + epsilon[a]
+                - epsilon[b]
                 >= self._eta
             )
 
-        # Absolute value constraints
+            # Pairwise inversion constraint
+            constraints.append(
+                linear_score
+                + self._L * z[(a, b)]
+                >= 0
+            )
 
+        # |epsilon_a| <= t_a
         for alternative in election.alternatives:
 
             a = alternative.id
 
-            # constraints.append(
-            #     epsilon[a] <= t[a]
-            # )
+            constraints.append(epsilon[a] <= t[a])
+            constraints.append(-epsilon[a] <= t[a])
 
-            # constraints.append(
-            #     -epsilon[a] <= t[a]
-            # )
-            constraints.append(
-                cp.abs(epsilon[a]) <= t[a]
-            ) 
-
+        # ||theta||_inf <= 1
         constraints.append(
             cp.norm_inf(theta) <= 1
         )
-            
+
         # --------------------------------------------------
         # Objective
         # --------------------------------------------------
 
         objective = cp.Minimize(
             cp.sum(list(t.values()))
+            + self._lambda * cp.sum(list(z.values()))
         )
-
-        # --------------------------------------------------
-        # Solve
-        # --------------------------------------------------
 
         problem = cp.Problem(
             objective,
             constraints,
         )
 
+        # --------------------------------------------------
+        # Solve
+        # --------------------------------------------------
+
         problem.solve(
             solver=self._solver,
         )
-        
-        if problem.status not in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:
-            raise RuntimeError(
-                f"LP solver failed with status '{problem.status}'."
-            )
-        # --------------------------------------------------
-        # Return result
-        # --------------------------------------------------
 
-        return LPResult(
-            theta=theta.value.copy(),
+        if problem.status not in (
+            cp.OPTIMAL,
+            cp.OPTIMAL_INACCURATE,
+        ):
+            raise RuntimeError(
+                f"Solver terminated with status "
+                f"'{problem.status}'."
+            )
+
+        assert theta.value is not None
+        assert problem.value is not None
+
+        return NewLPResult(
+            theta=np.asarray(theta.value).copy(),
             epsilon={
                 alternative.id: float(epsilon[alternative.id].value)
                 for alternative in election.alternatives
             },
+            z={
+                edge_key: float(variable.value)
+                for edge_key, variable in z.items()
+            },
             objective_value=float(problem.value),
             status=str(problem.status),
-            # solver=str(self._solver),
+            solver=str(self._solver),
         )
-        # raise NotImplementedError
-
-

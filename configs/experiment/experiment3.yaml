@@ -5,16 +5,16 @@ num_trials: 100
 seed: 42
 
 data:
-  num_voters: 11
-  num_alternatives: 4
+  num_voters: 101
+  num_alternatives: 24
   dimension: 2
   mean: 0.0
   std: 1.0
-  noisy_alternative_fraction: 1.0
-  noise_std: 1.0
+  noisy_alternative_fraction: 0.1
+  noise_std: 0.001
 
 optimization:
-  eta: 1e-6
+  eta: 1.0
   solver: HIGHS
 
 logging:

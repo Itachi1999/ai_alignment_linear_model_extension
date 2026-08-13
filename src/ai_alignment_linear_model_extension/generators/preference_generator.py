@@ -75,7 +75,7 @@ class UniformPreferenceGenerator(PreferenceGenerator):
     
 
 
-class LinearPreferenceGenerator:
+class LinearPreferenceGenerator(PreferenceGenerator):
     def __init__(
         self,
         theta_0: np.ndarray,
@@ -109,25 +109,27 @@ class LinearPreferenceGenerator:
             for alt in alternatives
         }
 
+        noisy_alternative_ids = set(
+            self.rng.choice(
+                tuple(utility.keys()),
+                size=num_noisy,
+                replace=False,
+            )
+        )
+        for alt_id in noisy_alternative_ids:
+            utility[alt_id] += 10
+        # Sanity check for linearity
         num_noisy = int(
             round(num_alternatives * self.noisy_alternative_fraction)
         )
 
         for voter_id in range(num_voters):
-            noisy_alternative_ids = set(
-                self.rng.choice(
-                    tuple(utility.keys()),
-                    size=num_noisy,
-                    replace=False,
-                )
-            )
-            
+            #TODO: Mallows Model
             for alt_id in noisy_alternative_ids:
                 utility[alt_id] += self.rng.normal(
                     loc=0.0,
                     scale=self.noise_std,
                 )
-
             ranking = tuple(sorted(utility, key=utility.get, reverse=True))
             voters.append(
                 Voter(
@@ -137,3 +139,12 @@ class LinearPreferenceGenerator:
             )
 
         return tuple(voters)
+    
+
+class POLinearSequenceGenerator(PreferenceGenerator):
+    def __init__(self, seed: int | None = None):
+        self._rng = np.random.default_rng(seed=seed)
+        super().__init__()
+
+    def generate(self, num_voters, alternatives):
+        pass
