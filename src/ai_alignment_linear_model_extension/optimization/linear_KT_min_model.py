@@ -12,7 +12,6 @@ from ai_alignment_linear_model_extension.optimization.lp_result import (
 )
 
 
-
 class KTMinLinearModelSolver:
     """
     Solves the new LP with pairwise inversion variables z_ab.

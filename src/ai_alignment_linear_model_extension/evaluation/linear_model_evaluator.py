@@ -42,6 +42,16 @@ class LinearModelEvaluator:
 
         epsilon = result.epsilon
 
+        z = result.z
+
+        z_support = None
+        if z is not None:
+            z_support = tuple(
+                edge_key
+                for edge_key, z_val in z.items()
+                if z_val > self._tolerance
+            )
+
         epsilon_support = tuple(
             alternative.id
             for alternative in election.alternatives
@@ -86,8 +96,12 @@ class LinearModelEvaluator:
             epsilon_support=epsilon_support,
             num_nonzero_epsilon=len(epsilon_support),
             epsilon_support_percentage=(
-                len(epsilon_support) / len(election.alternatives)
+                100 * len(epsilon_support) / len(election.alternatives)
                 if election.alternatives else 0.0
+            ),
+            z_support_percentage = (
+                100 * len(z_support) / total
+                if z_support else 0.0
             ),
             violation_percentage=100 * total_violations / total if total else 0.0,
             po_violation_percentage=100 * po_violations / graph.num_po_edges if graph.num_po_edges else 0.0,
