@@ -13,7 +13,7 @@ from ai_alignment_linear_model_extension.optimization.lp_result import (
 
 
 
-class NewLinearModelSolver:
+class KTMinLinearModelSolver:
     """
     Solves the new LP with pairwise inversion variables z_ab.
     """
@@ -32,7 +32,7 @@ class NewLinearModelSolver:
         self,
         election: Election,
         graph: PreferenceGraph,
-    ) -> NewLPResult:
+    ) -> LPResult:
 
         d = election.dimension
 
@@ -54,9 +54,7 @@ class NewLinearModelSolver:
 
         self._L = np.sqrt(d) * delta
 
-        # --------------------------------------------------
         # Variables
-        # --------------------------------------------------
 
         theta = cp.Variable(d, name="theta")
 
@@ -83,9 +81,7 @@ class NewLinearModelSolver:
             for edge in graph.edges
         }
 
-        # --------------------------------------------------
         # Constraints
-        # --------------------------------------------------
 
         constraints: list[cp.Constraint] = []
 
@@ -127,9 +123,7 @@ class NewLinearModelSolver:
             cp.norm_inf(theta) <= 1
         )
 
-        # --------------------------------------------------
         # Objective
-        # --------------------------------------------------
 
         objective = cp.Minimize(
             cp.sum(list(t.values()))
@@ -141,9 +135,7 @@ class NewLinearModelSolver:
             constraints,
         )
 
-        # --------------------------------------------------
         # Solve
-        # --------------------------------------------------
 
         problem.solve(
             solver=self._solver,
@@ -161,7 +153,7 @@ class NewLinearModelSolver:
         assert theta.value is not None
         assert problem.value is not None
 
-        return NewLPResult(
+        return LPResult(
             theta=np.asarray(theta.value).copy(),
             epsilon={
                 alternative.id: float(epsilon[alternative.id].value)
@@ -173,5 +165,4 @@ class NewLinearModelSolver:
             },
             objective_value=float(problem.value),
             status=str(problem.status),
-            solver=str(self._solver),
         )

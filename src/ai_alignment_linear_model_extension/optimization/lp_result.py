@@ -13,3 +13,4 @@ class LPResult:
     epsilon: dict[int, float]
     objective_value: float
     status: str
+    z: dict[tuple[int, ...], float] | None = None
