@@ -54,7 +54,6 @@ class BTLBaselineEvaluation(BaseExperiment):
 
         self._fas_solver = FeedbackArcSetSolver()
 
-
         self._graph_builder = PreferenceGraphBuilder()
 
         self._fas_solver = FeedbackArcSetSolver()
