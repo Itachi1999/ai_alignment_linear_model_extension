@@ -40,3 +40,7 @@ class EvaluationResult:
     def epsilon_sparsity(self) -> float | None:
         return 1 - self.epsilon_support_percentage if self.epsilon_support_percentage is not None else None
 
+    @property 
+    def z_sparsity(self) -> float | None:
+        return 1 - self.z_support_percentage if self.z_support_percentage is not None else None
+
