@@ -143,7 +143,7 @@ class LinearModelSolver:
         # --------------------------------------------------
 
         return LPResult(
-            theta=theta.value.copy(),
+            theta=np.asarray(theta.value).copy(),
             epsilon={
                 alternative.id: float(epsilon[alternative.id].value)
                 for alternative in election.alternatives

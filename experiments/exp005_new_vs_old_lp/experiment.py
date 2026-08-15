@@ -25,11 +25,13 @@ from ai_alignment_linear_model_extension.generators.election_generator import  E
 from ai_alignment_linear_model_extension.preference_graph.preference_graph import PreferenceGraphBuilder
 from ai_alignment_linear_model_extension.preference_graph.FAS import FeedbackArcSetSolver
 from ai_alignment_linear_model_extension.optimization.extension_linear_model import LinearModelSolver
+from ai_alignment_linear_model_extension.optimization.linear_KT_min_model import KTMinLinearModelSolver
 from ai_alignment_linear_model_extension.evaluation.linear_model_evaluator import LinearModelEvaluator
-from ai_alignment_linear_model_extension.visualization.violation_plots import ViolationPlots
-from ai_alignment_linear_model_extension.optimization.utills import ModelType
+from ai_alignment_linear_model_extension.visualization.violation_plots import (
+    ViolationPlots, ModelType
+)
 
-class LinearThetaExpressibilityExperiment(BaseExperiment):
+class OldVsNewLPExperiment(BaseExperiment):
     """ 
     This class implements a synthetic experiment to test the expressibility of LP generated theta against the LP generated theta and epsilon.
     """
@@ -54,10 +56,15 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
         self._fas_solver = FeedbackArcSetSolver()
 
         # Optimization parameter is unused in the LinearModelSolver, but we keep it for consistency with other experiments.
-        self._lp_solver = LinearModelSolver(
+        self._old_lp_solver = LinearModelSolver(
             eta=self._cfg.optimization.eta,
             solver=self._cfg.optimization.solver,
         )   
+        self._new_lp_solver = KTMinLinearModelSolver(
+            eta = self._cfg.optimization.eta,
+            lambda_= self._cfg.optimization.lambda_,
+            solver=self._cfg.optimization.solver,
+        )
 
         self._graph_builder = PreferenceGraphBuilder()
 
@@ -90,18 +97,33 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
             fas_result = self._fas_solver.solve(graph)
         timers.append(timer.result)
 
-        with Timer("LP Solve") as timer:
-            lp_result = self._lp_solver.solve(
+        with Timer("Old LP Solve") as timer:
+            old_lp_result = self._old_lp_solver.solve(
+                election,
+                fas_result.dag,
+            )
+        timers.append(timer.result)
+        
+        with Timer("New LP Solve") as timer:
+            new_lp_result = self._new_lp_solver.solve(
                 election,
                 fas_result.dag,
             )
         timers.append(timer.result)
 
-        with Timer("Evaluation") as timer:
-            evaluation = self._evaluator.evaluate(
+        with Timer("Old LP Evaluation") as timer:
+            old_evaluation = self._evaluator.evaluate(
                 election,
                 fas_result.dag,
-                lp_result,
+                old_lp_result,
+            )
+        timers.append(timer.result)
+        
+        with Timer("New LP Evaluation") as timer:
+            new_evaluation = self._evaluator.evaluate(
+                election,
+                fas_result.dag,
+                new_lp_result,
             )
         timers.append(timer.result)
 
@@ -109,7 +131,10 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
             trial=trial,
             seed=seed,
             # lp_result=lp_result,
-            evaluation_result=evaluation,
+            evaluation_result={
+                ModelType.EPSILON_LP: old_evaluation,
+                ModelType.KT_MIN_LP: new_evaluation
+            },
             fas_size=len(fas_result.removed_edges),
             timers=tuple(timers),
         )
@@ -118,83 +143,84 @@ class LinearThetaExpressibilityExperiment(BaseExperiment):
         self,
         trials: list[TrialResult],
     ) -> ExperimentResult:
+        statistics:dict[ModelType, ExperimentStatistics] = {}
+        for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP]:
+            objectives = [
+                trial.evaluation_result[model].objective_value
+                for trial in trials
+            ]
 
-        # For this experiment, we will summarize the objective values, violation percentages, and other relevant metrics across all trials.
-        objectives = [
-            trial.evaluation_result.objective_value
-            for trial in trials
-        ]
+            violations = [
+                trial.evaluation_result[model].violation_percentage
+                for trial in trials
+            ]
 
-        violations = [
-            trial.evaluation_result.violation_percentage
-            for trial in trials
-        ]
+            po_violations = [
+                trial.evaluation_result[model].po_violation_percentage
+                for trial in trials
+            ]
 
-        po_violations = [
-            trial.evaluation_result.po_violation_percentage
-            for trial in trials
-        ]
+            pmc_violations = [
+                trial.evaluation_result[model].pmc_violation_percentage
+                for trial in trials
+            ]
 
-        pmc_violations = [
-            trial.evaluation_result.pmc_violation_percentage
-            for trial in trials
-        ]
+            fas_sizes = [
+                trial.fas_size
+                for trial in trials
+            ]
 
-        fas_sizes = [
-            trial.fas_size
-            for trial in trials
-        ]
+            epsilon_support_percentages = [
+                trial.evaluation_result[model].epsilon_support_percentage
+                for trial in trials
+            ]
 
-        epsilon_support_percentages = [
-            trial.evaluation_result.epsilon_support_percentage
-            for trial in trials
-        ]
+            epsilon_sparsities = [
+                trial.evaluation_result[model].epsilon_sparsity
+                for trial in trials
+            ]
+            
+            z_support_percentages = [
+                trial.evaluation_result[model].z_support_percentage
+                for trial in trials    
+            ]
+            
+            successful_trials = [
+                trial for trial in trials
+                if trial.success
+            ]
 
-        epsilon_sparsities = [
-            trial.evaluation_result.epsilon_sparsity
-            for trial in trials
-        ]
-        successful_trials = [
-            trial for trial in trials
-            if trial.success
-        ]
+            statistics[model] =  ExperimentStatistics(
+                num_trials=len(trials),
 
-        statistics = ExperimentStatistics(
-            num_trials=len(trials),
+                mean_objective=fmean(objectives),
+                std_objective=stdev(objectives),
 
-            mean_objective=fmean(objectives),
-            std_objective=stdev(objectives),
+                mean_violation_percentage=mean(violations),
+                std_violation_percentage=stdev(violations),
 
-            mean_violation_percentage=mean(violations),
-            std_violation_percentage=stdev(violations),
+                mean_po_violation_percentage=mean(po_violations),
+                std_po_violation_percentage=stdev(po_violations),
 
-            mean_po_violation_percentage=mean(po_violations),
-            std_po_violation_percentage=stdev(po_violations),
+                mean_pmc_violation_percentage=mean(pmc_violations),
+                std_pmc_violation_percentage=stdev(pmc_violations),
 
-            mean_pmc_violation_percentage=mean(pmc_violations),
-            std_pmc_violation_percentage=stdev(pmc_violations),
+                mean_fas_size=mean(fas_sizes),
+                std_fas_size=stdev(fas_sizes),
+                
+                success_rate = (
+                    len(successful_trials) / len(trials)
+                    if trials else 0.0
+                ),
 
-            mean_fas_size=mean(fas_sizes),
-            std_fas_size=stdev(fas_sizes),
+                mean_epsilon_support_percentage=mean(epsilon_support_percentages),
+                std_epsilon_support_percentage=stdev(epsilon_support_percentages),
 
-            mean_epsilon_support_percentage=mean(epsilon_support_percentages),
-            std_epsilon_support_percentage=stdev(epsilon_support_percentages),
-
-            mean_epsilon_sparsity=mean(epsilon_sparsities),
-            std_epsilon_sparsity=stdev(epsilon_sparsities),
-
-            # success_rate = (
-            #     sum(
-            #         trial.evaluation_result.num_violations == 0
-            #         for trial in trials
-            #     )
-            #     / len(trials)
-            # ),
-            success_rate = (
-                len(successful_trials) / len(trials)
-                if trials else 0.0
-            ),
-        )
+                mean_epsilon_sparsity=mean(epsilon_sparsities),
+                std_epsilon_sparsity=stdev(epsilon_sparsities),
+                mean_z_support_percentage=mean(z_support_percentages), 
+                std_z_support_percentage=stdev(z_support_percentages),    
+                )
 
         return ExperimentResult(
             trials=tuple(trials),
@@ -211,7 +237,7 @@ def main(cfg: DictConfig) -> None:
     exp_cfg = cfg.experiment
     print(f"Running experiment: {exp_cfg.name}")
     # print(f"Configuration:\n{cfg.pretty()}")
-    experiment = LinearThetaExpressibilityExperiment(exp_cfg)
+    experiment = OldVsNewLPExperiment(exp_cfg)
 
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
 
@@ -226,16 +252,8 @@ def main(cfg: DictConfig) -> None:
         seed=exp_cfg.seed,
     )
     
-    plots = ViolationPlots(
-        {
-            ModelType.EPSILON_LP: result,
-        }
-    )
-    plots.plot_violation_rates()
-    plots.plot_violation_across_trials()
-    plots.plot_po_vs_pmc()
-    plots.plot_epsilon_support_across_trials()
-    plots.plot_epsilon_sparsity()
+    plots = ViolationPlots(result)
+    plots.create_all()
     
     logger.save_plots(
         plots.plots,

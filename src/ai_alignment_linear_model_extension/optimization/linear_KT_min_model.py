@@ -48,7 +48,7 @@ class KTMinLinearModelSolver:
         delta = max(
             np.linalg.norm(x_a - x_b)
             for i, x_a in enumerate(features_list)
-            for x_b in features[i + 1:]
+            for x_b in features_list[i + 1:]
         )
 
         self._L = np.sqrt(d) * delta
@@ -111,11 +111,8 @@ class KTMinLinearModelSolver:
 
         # |epsilon_a| <= t_a
         for alternative in election.alternatives:
-
             a = alternative.id
-
-            constraints.append(epsilon[a] <= t[a])
-            constraints.append(-epsilon[a] <= t[a])
+            constraints.append(cp.abs(epsilon[a]) <= t[a])
 
         # ||theta||_inf <= 1
         constraints.append(

@@ -10,9 +10,11 @@ from omegaconf import DictConfig, OmegaConf
 from tqdm.rich import trange
 from dataclasses import asdict
 import csv, json
+from matplotlib.figure import Figure
 
 from experiments.core.experiment_statistics import ExperimentResult
 from experiments.core.trial_result import TrialResult
+from ai_alignment_linear_model_extension.visualization.plot_data import PlotRecord
 
 
 class BaseExperiment(ABC):
@@ -76,8 +78,8 @@ class ExperimentRunner:
                 seed=seed,
                 success=False,
                 error=str(e),
-                evaluation_result=None,
-                fas_size=None,
+                evaluation_result={},
+                fas_size=0,
                 timers=(),
             )
             trials.append(trial_result)
@@ -120,7 +122,10 @@ class ExperimentLogger:
 
         with (output_dir / "summary.json").open("w") as file:
             json.dump(
-                asdict(result.statistics),
+                    {
+                        model.label : asdict(stat)
+                        for model, stat in result.statistics.items()
+                    },
                 file,
                 indent=4,
             )
@@ -132,36 +137,32 @@ class ExperimentLogger:
     ) -> None:
 
         rows = []
+        for model, stat in result.statistics.items():
+            for trial in result.trials:
+                evaluation = trial.evaluation_result[model]
+                rows.append({
+                    "model": model.label,
+                    "trial": trial.trial,
+                    "seed": trial.seed,
 
-        for trial in result.trials:
+                    "objective": evaluation.objective_value,
+                    "loss_value": evaluation.loss_value,
+                    
+                    "fas_size": trial.fas_size,
 
-            evaluation = trial.evaluation_result
+                    "num_violations": evaluation.num_violations,
+                    "num_po_violations": evaluation.num_po_violations,
+                    "num_pmc_violations": evaluation.num_pmc_violations,
 
-            rows.append({
-                "trial": trial.trial,
-                "seed": trial.seed,
+                    "epsilon_support_percentage": evaluation.epsilon_support_percentage,
 
-                "objective": trial.evaluation_result.objective_value,
-                "loss_value": trial.evaluation_result.loss_value,
-                
-                "fas_size": trial.fas_size,
+                    "epsilon_sparsity": evaluation.epsilon_sparsity,
 
-                "num_violations": evaluation.num_violations,
-                "num_po_violations": evaluation.num_po_violations,
-                "num_pmc_violations": evaluation.num_pmc_violations,
-
-                "epsilon_support_percentage":
-                    evaluation.epsilon_support_percentage,
-
-                "epsilon_sparsity":
-                    evaluation.epsilon_sparsity,
-
-                **{
-                    f"time_{timer.name}":
-                        timer.elapsed_time
-                    for timer in trial.timers
-                },
-            })
+                    **{
+                        f"time_{timer.name}": timer.elapsed_time
+                        for timer in trial.timers
+                    },
+                })
 
         pd.DataFrame(rows).to_csv(
             output_dir / "trials.csv",
@@ -194,6 +195,35 @@ class ExperimentLogger:
 
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
+        
+    def save_figure(
+        self,
+        figure: Figure,
+        filename: str,
+        output_dir: Path,
+    ) -> None:
+        figures_dir = output_dir / "figures"
+        figures_dir.mkdir(parents=True, exist_ok=True)
+
+        figure.savefig(
+            figures_dir / filename,
+            dpi=300,
+            bbox_inches="tight",
+        )
+
+        plt.close(figure)
+        
+    def save_plots(
+        self,
+        plots: tuple[PlotRecord, ...],
+        output_dir: Path,
+    ) -> None:
+        for plot in plots:
+            self.save_figure(
+                figure=plot.figure,
+                filename=f"{plot.name}.png",
+                output_dir=output_dir,
+            )
 
 
 # class ExperimentLogger:

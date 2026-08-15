@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from experiments.core.trial_result import TrialResult
+from experiments.core.trial_result import TrialResult, ModelType
 
 
 
@@ -29,6 +29,9 @@ class ExperimentStatistics:
 
     mean_epsilon_sparsity: float | None = None
     std_epsilon_sparsity: float | None = None
+    
+    mean_z_support_percentage: float | None = None
+    std_z_support_percentage: float | None = None
 
     mean_loss: float | None = None
     std_loss: float | None = None
@@ -40,4 +43,4 @@ class ExperimentStatistics:
 @dataclass(frozen=True, slots=True)
 class ExperimentResult:
     trials: tuple[TrialResult, ...]
-    statistics: ExperimentStatistics
+    statistics: dict[ModelType, ExperimentStatistics]
