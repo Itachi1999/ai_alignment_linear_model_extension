@@ -24,8 +24,10 @@ class BTLModelEvaluator:
     def __init__(
         self,
         tolerance: float = 1e-9,
+        eta: float = 1e-2
     ) -> None:
         self._tolerance = tolerance
+        self.eta = eta
 
     def evaluate(
         self,
@@ -43,7 +45,8 @@ class BTLModelEvaluator:
             score1 = result.scores.get(edge.source, 0.0)
             score2 = result.scores.get(edge.target, 0.0)
             prob = scipy.special.expit(score1 - score2)
-            if np.isclose(prob, 0.5) or (prob < 0.5):
+            # if np.isclose(prob, 0.5) or (prob < 0.5):
+            if score1 < (score2 + self.eta):
                 violated_edges.append(edge)
                 if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
                     po_violations += 1

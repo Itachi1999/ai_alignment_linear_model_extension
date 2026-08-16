@@ -85,25 +85,25 @@ class KTMinLinearModelSolver:
         constraints: list[cp.Constraint] = []
 
         for edge in graph.edges:
-            if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
-                a = edge.source
-                b = edge.target
+            # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+            a = edge.source
+            b = edge.target
 
-                x_a = features[a]
-                x_b = features[b]
+            x_a = features[a]
+            x_b = features[b]
 
-                linear_score = theta @ (x_a - x_b)
+            linear_score = theta @ (x_a - x_b)
 
-                # Original preference constraint
-                constraints.append(
-                    linear_score + epsilon[a] - epsilon[b] >= self._eta
-                )
+            # Original preference constraint
+            constraints.append(
+                linear_score + epsilon[a] - epsilon[b] >= self._eta
+            )
 
-                # Pairwise inversion constraint
-                constraints.append(
-                    linear_score + self._L * z[(a, b)]
-                    >= self._eta
-                )
+            # Pairwise inversion constraint
+            constraints.append(
+                linear_score + self._L * z[(a, b)]
+                >= self._eta
+            )
 
         # |epsilon_a| <= t_a
         for alternative in election.alternatives:
