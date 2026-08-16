@@ -139,12 +139,106 @@ class LinearPreferenceGenerator(PreferenceGenerator):
             )
 
         return tuple(voters)
-    
 
-class POLinearSequenceGenerator(PreferenceGenerator):
-    def __init__(self, seed: int | None = None):
-        self._rng = np.random.default_rng(seed=seed)
-        super().__init__()
 
-    def generate(self, num_voters, alternatives):
-        pass
+class KLengthPOPreferenceGenerator(PreferenceGenerator):
+    """
+    Generates preference profiles containing a common k-length PO subsequence.
+
+    The relative order of the k selected alternatives is identical for
+    every voter, while the remaining alternatives are freely permuted
+    and interleaved.
+    """
+
+    def __init__(
+        self,
+        theta: np.ndarray,
+        k: int,
+        seed: int | None = None,
+    ) -> None:
+        self._theta = theta
+        self._k = k
+        self._rng = np.random.default_rng(seed)
+
+    def generate(self, num_voters: int, alternatives: tuple[Alternative, ...]) -> tuple[Voter, ...]:
+        m = len(alternatives)
+        if not 1 <= self._k <= m:
+            raise ValueError(
+                f"k must satisfy 1 <= k <= {m}."
+            )
+
+        if self._theta.shape[0] != alternatives[0].features.shape[0]:
+            raise ValueError(
+                "Theta dimension must match the feature dimension."
+            )
+
+        # Step 1: Compute utility under theta
+
+        utilities = {
+            alternative.id: float(
+                self._theta @ alternative.features
+            )
+            for alternative in alternatives
+        }
+
+        # Step 2: Select and order the common k alternatives
+
+        po_sequence = tuple(
+            sorted(
+                utilities,
+                key=utilities.get,
+                reverse=True,
+            )[: self._k]
+        )
+
+        po_ids = set(po_sequence)
+
+        remaining_ids = tuple(
+            alternative.id
+            for alternative in alternatives
+            if alternative.id not in po_ids
+        )
+
+        # Step 3: Generate voters
+        voters = []
+
+
+        for voter_id in range(num_voters):
+
+            # Random order of non-PO alternatives
+            remaining = list(remaining_ids)
+            self._rng.shuffle(remaining)
+
+            # Choose positions occupied by PO sequence
+            po_positions = sorted(
+                self._rng.choice(
+                    m,
+                    size=self._k,
+                    replace=False,
+                )
+            )
+
+            ranking = [-1] * m
+
+            # Preserve PO order
+            for position, alternative_id in zip(
+                po_positions,
+                po_sequence,
+            ):
+                ranking[position] = alternative_id
+
+            # Fill remaining positions
+            remaining_iter = iter(remaining)
+
+            for index in range(m):
+                if ranking[index] is None:
+                    ranking[index] = next(remaining_iter)
+
+            voters.append(
+                Voter(
+                    id=voter_id,
+                    ranking=tuple(ranking)
+                )
+            )
+
+        return tuple(voters)
