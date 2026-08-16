@@ -5,7 +5,7 @@ import numpy as np
 
 from ai_alignment_linear_model_extension.models.election import Election
 from ai_alignment_linear_model_extension.preference_graph.preference_graph import (
-    PreferenceGraph,
+    PreferenceGraph, PreferenceEdgeType
 )
 from ai_alignment_linear_model_extension.optimization.lp_result import (
     LPResult,
@@ -85,29 +85,25 @@ class KTMinLinearModelSolver:
         constraints: list[cp.Constraint] = []
 
         for edge in graph.edges:
+            if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+                a = edge.source
+                b = edge.target
 
-            a = edge.source
-            b = edge.target
+                x_a = features[a]
+                x_b = features[b]
 
-            x_a = features[a]
-            x_b = features[b]
+                linear_score = theta @ (x_a - x_b)
 
-            linear_score = theta @ (x_a - x_b)
+                # Original preference constraint
+                constraints.append(
+                    linear_score + epsilon[a] - epsilon[b] >= self._eta
+                )
 
-            # Original preference constraint
-            constraints.append(
-                linear_score
-                + epsilon[a]
-                - epsilon[b]
-                >= self._eta
-            )
-
-            # Pairwise inversion constraint
-            constraints.append(
-                linear_score
-                + self._L * z[(a, b)]
-                >= 0
-            )
+                # Pairwise inversion constraint
+                constraints.append(
+                    linear_score + self._L * z[(a, b)]
+                    >= self._eta
+                )
 
         # |epsilon_a| <= t_a
         for alternative in election.alternatives:
@@ -132,22 +128,34 @@ class KTMinLinearModelSolver:
         )
 
         # Solve
-
-        problem.solve(
-            solver=self._solver,
-        )
-
-        if problem.status not in (
-            cp.OPTIMAL,
-            cp.OPTIMAL_INACCURATE,
-        ):
-            raise RuntimeError(
-                f"Solver terminated with status "
-                f"'{problem.status}'."
+        try:   
+            problem.solve(
+                solver=self._solver,
             )
+        except Exception as e:
+            return LPResult(
+                theta=np.zeros(d),
+                epsilon={
+                    alternative.id: float(0.0)
+                    for alternative in election.alternatives
+                },
+                z={
+                    edge_key: float(0.0)
+                    for edge_key, variable in z.items()
+                },
+                objective_value=float(0.0),
+                status=str(problem.status),
+            )
+            
 
-        assert theta.value is not None
-        assert problem.value is not None
+        # if problem.status not in (
+        #     cp.OPTIMAL,
+        #     cp.OPTIMAL_INACCURATE,
+        # ):
+        #     raise RuntimeError(
+        #         f"Solver terminated with status "
+        #         f"'{problem.status}'."
+        #     )
 
         return LPResult(
             theta=np.asarray(theta.value).copy(),

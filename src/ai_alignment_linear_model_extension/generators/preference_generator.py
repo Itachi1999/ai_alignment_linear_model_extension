@@ -231,7 +231,7 @@ class KLengthPOPreferenceGenerator(PreferenceGenerator):
             remaining_iter = iter(remaining)
 
             for index in range(m):
-                if ranking[index] is None:
+                if ranking[index] == -1:
                     ranking[index] = next(remaining_iter)
 
             voters.append(

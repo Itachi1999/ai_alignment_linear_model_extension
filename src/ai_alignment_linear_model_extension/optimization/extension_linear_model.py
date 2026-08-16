@@ -5,7 +5,7 @@ import numpy as np
 
 from ai_alignment_linear_model_extension.models.election import Election
 from ai_alignment_linear_model_extension.preference_graph.preference_graph import (
-    PreferenceGraph,
+    PreferenceGraph, PreferenceEdgeType
 )
 from ai_alignment_linear_model_extension.optimization.lp_result import (
     LPResult,
@@ -81,16 +81,16 @@ class LinearModelSolver:
         # Preference graph constraints
 
         for edge in graph.edges:
+            if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+                x_a = features[edge.source]
+                x_b = features[edge.target]
 
-            x_a = features[edge.source]
-            x_b = features[edge.target]
-
-            constraints.append(
-                (theta @ (x_a - x_b))
-                + (epsilon[edge.source]
-                - epsilon[edge.target])
-                >= self._eta
-            )
+                constraints.append(
+                    (theta @ (x_a - x_b))
+                    + (epsilon[edge.source]
+                    - epsilon[edge.target])
+                    >= self._eta
+                )
 
         # Absolute value constraints
 

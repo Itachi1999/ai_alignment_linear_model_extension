@@ -5,16 +5,16 @@ num_trials: 100
 seed: 42
 
 data:
-  num_voters: 11
-  num_alternatives: 4
+  num_voters: 13
+  num_alternatives: 9
   dimension: 2
   mean: 0.0
   std: 1.0
-  k: 2
+  k: 6
 
 optimization:
-  eta: 1e-6
-  lambda_: 1.0
+  eta: 1e-2
+  lambda_: 10
   solver: HIGHS
 
 logging:
