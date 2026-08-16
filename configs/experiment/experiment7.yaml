@@ -1,5 +1,5 @@
-name: exp006_new_vs_old_lp_k_po
-summary: Synthetic experiment with Gaussian candidate data and K Length PO preference generator. Here, we check the PO and PMC violations of the old epsilon LP and the new KT min LP model.  
+name: exp007_new_lp_vs_old_lp_vs_btl
+summary: Synthetic experiment with Gaussian candidate data and K Length PO preference generator. Here, we check the PO and PMC violations of the old epsilon LP and the new KT min LP model and the BTL model.  
 
 num_trials: 100
 seed: 42
@@ -10,7 +10,7 @@ data:
   dimension: 2
   mean: 0.0
   std: 1.0
-  k: 6
+  k: 3
 
 optimization:
   eta: 1e-2

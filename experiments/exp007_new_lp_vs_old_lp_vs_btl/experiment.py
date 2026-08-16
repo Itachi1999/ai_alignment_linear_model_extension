@@ -227,7 +227,13 @@ class AllModelsComparison(BaseExperiment):
             objectives = [
                 trial.evaluation_result[model].objective_value 
                 for trial in trials
-                if trial.evaluation_result[model] is not None
+                if trial.evaluation_result[model].objective_value is not None
+            ]
+            
+            loss_values = [
+                trial.evaluation_result[model].loss_value 
+                for trial in trials
+                if trial.evaluation_result[model].loss_value is not None
             ]
 
             violations = [
@@ -260,21 +266,21 @@ class AllModelsComparison(BaseExperiment):
             epsilon_support_percentages = [
                 trial.evaluation_result[model].epsilon_support_percentage
                 for trial in trials
-                if trial.evaluation_result[model] is not None
+                if trial.evaluation_result[model].epsilon_support_percentage is not None
                 
             ]
 
             epsilon_sparsities = [
                 trial.evaluation_result[model].epsilon_sparsity
                 for trial in trials
-                if trial.evaluation_result[model] is not None
+                if trial.evaluation_result[model].epsilon_sparsity is not None
                 
             ]
             
             z_support_percentages = [
                 trial.evaluation_result[model].z_support_percentage
                 for trial in trials 
-                if trial.evaluation_result[model] is not None
+                if trial.evaluation_result[model].z_support_percentage is not None
                    
             ]
             
@@ -287,8 +293,11 @@ class AllModelsComparison(BaseExperiment):
             statistics[model] =  ExperimentStatistics(
                 num_trials=len(trials),
 
-                mean_objective=fmean(objectives),
-                std_objective=stdev(objectives),
+                mean_objective=fmean(objectives) if len(objectives) else None,
+                std_objective=stdev(objectives) if len(objectives) else None,
+                
+                mean_loss=fmean(loss_values) if len(loss_values) else None,
+                std_loss=stdev(loss_values) if len(loss_values) else None,
 
                 mean_violation_percentage=mean(violations),
                 std_violation_percentage=stdev(violations),
@@ -307,13 +316,13 @@ class AllModelsComparison(BaseExperiment):
                     if trials else 0.0
                 ),
 
-                mean_epsilon_support_percentage=mean(epsilon_support_percentages),
-                std_epsilon_support_percentage=stdev(epsilon_support_percentages),
+                mean_epsilon_support_percentage=mean(epsilon_support_percentages) if len(epsilon_support_percentages) else None,
+                std_epsilon_support_percentage=stdev(epsilon_support_percentages) if len(epsilon_support_percentages) else None,
 
-                mean_epsilon_sparsity=mean(epsilon_sparsities),
-                std_epsilon_sparsity=stdev(epsilon_sparsities),
-                mean_z_support_percentage=mean(z_support_percentages), 
-                std_z_support_percentage=stdev(z_support_percentages),    
+                mean_epsilon_sparsity=mean(epsilon_sparsities) if len(epsilon_sparsities) else None,
+                std_epsilon_sparsity=stdev(epsilon_sparsities) if len(epsilon_sparsities) else None,
+                mean_z_support_percentage=mean(z_support_percentages) if len(z_support_percentages) else None, 
+                std_z_support_percentage=stdev(z_support_percentages) if len(z_support_percentages) else None,    
                 )
 
         return ExperimentResult(
