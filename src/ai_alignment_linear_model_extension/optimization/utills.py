@@ -4,6 +4,7 @@ class ModelType(Enum):
     EPSILON_LP = auto()
     KT_MIN_LP = auto()
     BTL = auto()
+    BTL_HINGE = auto()
     
     @property
     def label(self) -> str:
@@ -11,4 +12,5 @@ class ModelType(Enum):
             ModelType.EPSILON_LP: "Old LP",
             ModelType.KT_MIN_LP: "New LP",
             ModelType.BTL: "BTL",
+            ModelType.BTL_HINGE: "BTL Hinge",
         }[self]
