@@ -132,6 +132,10 @@ class LinearModelSolver:
 
         problem.solve(
             solver=self._solver,
+            highs_options={
+                "primal_feasibility_tolerance": 1e-10,
+                "dual_feasibility_tolerance": 1e-10,
+            },
         )
         
         if problem.status not in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:

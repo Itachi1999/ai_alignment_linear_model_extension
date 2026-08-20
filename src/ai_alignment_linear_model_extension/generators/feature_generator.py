@@ -87,7 +87,7 @@ class GaussianFeatureGenerator(FeatureGenerator):
             raise ValueError("Dimension must be positive.")
         
         for alt in range(num_alternatives):
-            features = self._rng.normal(loc=self.mean, scale=self.std_dev, size=dimension)
+            features = 10 * self._rng.normal(loc=self.mean, scale=self.std_dev, size=dimension)
             alternatives.append(Alternative(id=alt, dimension=dimension, features=features))
         # features = np.random.normal(size=(num_alternatives, dimension))
         return tuple(alternatives)

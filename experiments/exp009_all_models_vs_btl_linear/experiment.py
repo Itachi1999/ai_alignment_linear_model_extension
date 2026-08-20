@@ -94,14 +94,18 @@ class AllModelsComparison(BaseExperiment):
                 dimension=self._cfg.data.dimension
             )
         timers.append(timer.result)
+        logging.debug(f"election preference profile: {election.rankings}")
 
         with Timer("Graph Construction") as timer:
             marginal_matrix, graph = self._graph_builder.build(election)
         timers.append(timer.result)
-
+        logging.debug(f"Marginal Matrix: {marginal_matrix}")
+        logging.debug(f"preference graph: {graph}")
         with Timer("Feedback Arc Set") as timer:
             fas_result = self._fas_solver.solve(graph)
         timers.append(timer.result)
+        logging.debug(f"FAS Ordering {fas_result.ordering}")
+        logging.debug(f"Removed Edges: {fas_result.removed_edges}")
 
         with Timer("Old LP Solve") as timer:
             old_lp_result = self._old_lp_solver.solve(
@@ -109,6 +113,9 @@ class AllModelsComparison(BaseExperiment):
                 fas_result.dag,
             )
         timers.append(timer.result)
+        logging.debug("OLD LP:")
+        logging.debug(f"Epsilon: {old_lp_result.epsilon}")
+        logging.debug(f"Epsilon Norm: {old_lp_result.objective_value}")
         
         with Timer("New LP Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
@@ -116,6 +123,11 @@ class AllModelsComparison(BaseExperiment):
                 fas_result.dag,
             )
         timers.append(timer.result)
+        logging.debug("NEW LP")
+        logging.debug(f"Epsilon: {new_lp_result.epsilon}")
+        logging.debug(f"Epsilon Norm: {np.sum(np.abs(list(new_lp_result.epsilon.values())), dtype=float)}")
+        logging.debug(f"z value: {new_lp_result.z}")
+        logging.debug(f"Objetive Value: {new_lp_result.objective_value}")
         
         with Timer("BTL Model Fitting") as timer:
             blt_model = BTLLinearModel(

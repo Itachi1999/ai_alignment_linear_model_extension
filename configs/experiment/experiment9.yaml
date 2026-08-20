@@ -1,7 +1,7 @@
 name: exp009_all_models_vs_btl_linear
 summary: Synthetic experiment with Gaussian candidate data and K Length PO preference generator. Here, we check the PO and PMC violations of the old epsilon LP and the new KT min LP model and the BTL linear model.  
 
-num_trials: 100
+num_trials: 2
 seed: 42
 
 data:
@@ -13,7 +13,7 @@ data:
   k: 5
 
 optimization:
-  eta: 1e-2
+  eta: 1e-5
   lambda_: 10
   solver: HIGHS
   max_iterations: 100

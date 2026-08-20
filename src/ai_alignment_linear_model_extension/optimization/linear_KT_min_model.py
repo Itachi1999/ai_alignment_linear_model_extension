@@ -74,7 +74,8 @@ class KTMinLinearModelSolver:
 
         z = {
             (edge.source, edge.target): cp.Variable(
-                nonneg=True,
+                # boolean=True,
+                nonneg = True,
                 name=f"z_{edge.source}_{edge.target}",
             )
             for edge in graph.edges
@@ -101,7 +102,7 @@ class KTMinLinearModelSolver:
 
             # Pairwise inversion constraint
             constraints.append(
-                linear_score + self._L * z[(a, b)]
+                linear_score + z[(a, b)]
                 >= self._eta
             )
 
@@ -128,24 +129,31 @@ class KTMinLinearModelSolver:
         )
 
         # Solve
-        try:   
-            problem.solve(
-                solver=self._solver,
+        problem.solve(
+            solver=self._solver,
+            highs_options={
+                "primal_feasibility_tolerance": 1e-10,
+                "dual_feasibility_tolerance": 1e-10,
+            },
+        )
+        if problem.status not in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:
+            raise RuntimeError(
+                f"LP solver failed with status '{problem.status}'."
             )
-        except Exception as e:
-            return LPResult(
-                theta=np.zeros(d),
-                epsilon={
-                    alternative.id: float(0.0)
-                    for alternative in election.alternatives
-                },
-                z={
-                    edge_key: float(0.0)
-                    for edge_key, variable in z.items()
-                },
-                objective_value=float(0.0),
-                status=str(problem.status),
-            )
+        # except Exception as e:
+        #     return LPResult(
+        #         theta=np.zeros(d),
+        #         epsilon={
+        #             alternative.id: float(0.0)
+        #             for alternative in election.alternatives
+        #         },
+        #         z={
+        #             edge_key: float(0.0)
+        #             for edge_key, variable in z.items()
+        #         },
+        #         objective_value=float(0.0),
+        #         status=str(problem.status),
+        #     )
             
 
         # if problem.status not in (

@@ -121,9 +121,11 @@ class PreferenceGraph:
 
     def __str__(self) -> str:
         return (
-            f"PreferenceGraph("
-            f"num_vertices={self.num_vertices}, "
-            f"num_edges={self.num_edges})"
+            f"""Preference Graph(
+                Number of Vertices = {self._graph.number_of_nodes},
+                Number of Edges = {self._graph.number_of_edges},
+                Edges = {self._graph.edges}
+            )"""
         )
 
 

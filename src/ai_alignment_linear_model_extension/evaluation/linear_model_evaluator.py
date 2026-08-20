@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import logging
 
 from ai_alignment_linear_model_extension.evaluation.evaluation_result import (
     EvaluationResult,
@@ -55,7 +56,7 @@ class LinearModelEvaluator:
         epsilon_support = tuple(
             alternative.id
             for alternative in election.alternatives
-            if abs(epsilon[alternative.id]) > self._tolerance
+            if abs(epsilon[alternative.id]) > 0.0
         )
 
         for edge in graph.edges:
@@ -66,8 +67,18 @@ class LinearModelEvaluator:
                     features[edge.source] - features[edge.target],
                 )
             )
+            print(f"Score: {score}")
+            epsilon_diff = (
+                result.epsilon[edge.source]
+                - result.epsilon[edge.target]
+            )
 
-            if score < self._tolerance:
+            total_score = score + epsilon_diff
+
+            logging.debug(
+                f"Edge {edge.source} -> {edge.target} | theta= {result.theta} | linear score={score} | feature difference= {features[edge.source] - features[edge.target]} | epsilon_diff={epsilon_diff} | total= {total_score}"
+            )
+            if score < 0.0:
 
                 violated_edges.append(edge)
                 # print(f"Violated edge: {edge.source} -> {edge.target}, score: {score}, type: {edge.edge_type}")

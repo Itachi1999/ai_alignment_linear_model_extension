@@ -28,3 +28,6 @@ class MajorityEdge:
         # This check that weight is a postive number and greater than 1/2 is only for majority graph, for other graphs, we can have negative weights. So, we will not check for negative weights here.
         if self.weight <= 0.5:
             raise ValueError("Weight must be greater than 0.5 for majority graph.")
+
+    def __str__(self):
+        return f"Edge from {self.source} to {self.target}"
