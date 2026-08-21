@@ -242,3 +242,14 @@ class KLengthPOPreferenceGenerator(PreferenceGenerator):
             )
 
         return tuple(voters)
+
+
+class MallowsModel(PreferenceGenerator):
+    def __init__(self):
+        super().__init__()
+
+    def generate(self, num_voters, alternatives) -> tuple[dict[str, float | tuple[Voter, ...]]]:
+        """
+        Generates Preference profiles based on value of 
+        """
+        return super().generate(num_voters, alternatives)
