@@ -248,9 +248,75 @@ class NormalizedMallowsModel(PreferenceGenerator):
     def __init__(self):
         super().__init__()
 
-    def generate(self, num_voters, alternatives) -> tuple[dict[str, float | tuple[Voter, ...]]]:
+    def generate(self, num_voters, alternatives) -> tuple[Voter, ...]:
         """
         Generates Preference profiles based on value of 
         """
-        
-        return super().generate(num_voters, alternatives)
+    #     def generate(
+    #     self,
+    #     num_voters: int,
+    #     alternatives: tuple[Alternative, ...],
+    # ) -> tuple[Voter, ...]:
+
+        alternative_ids = tuple(
+            alternative.id
+            for alternative in alternatives
+        )
+
+        if set(self._reference_ranking) != set(alternative_ids):
+            raise ValueError(
+                "Reference ranking must contain exactly "
+                "the IDs of all alternatives."
+            )
+
+        voters: list[Voter] = []
+
+        for voter_id in range(num_voters):
+            ranking = self._sample_ranking()
+
+            voters.append(
+                Voter(
+                    id=voter_id,
+                    ranking=ranking,
+                )
+            )
+
+        return tuple(voters)
+
+    def _sample_ranking(self) -> tuple[int, ...]:
+        ranking: list[int] = []
+
+        for i, alternative_id in enumerate(
+            self._reference_ranking
+        ):
+            if i == 0:
+                ranking.append(alternative_id)
+                continue
+
+            positions = np.arange(i + 1)
+
+            if self._phi == 1.0:
+                probabilities = np.full(
+                    i + 1,
+                    1.0 / (i + 1),
+                )
+            else:
+                weights = self._phi ** positions
+                probabilities = weights / weights.sum()
+
+            displacement = int(
+                self._rng.choice(
+                    positions,
+                    p=probabilities,
+                )
+            )
+
+            insertion_position = i - displacement
+
+            ranking.insert(
+                insertion_position,
+                alternative_id,
+            )
+
+        return tuple(ranking)
+        # return super().generate(num_voters, alternatives)
