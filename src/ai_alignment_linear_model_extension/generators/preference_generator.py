@@ -246,9 +246,11 @@ class KLengthPOPreferenceGenerator(PreferenceGenerator):
 
 class NormalizedMallowsModel(PreferenceGenerator):
     def __init__(self):
+        self._phi = 0.0
+
         super().__init__()
 
-    def generate(self, num_voters, alternatives) -> tuple[Voter, ...]:
+    def generate(self, num_voters, phi,alternatives) -> tuple[Voter, ...]:
         """
         Generates Preference profiles based on value of 
         """
@@ -257,7 +259,7 @@ class NormalizedMallowsModel(PreferenceGenerator):
     #     num_voters: int,
     #     alternatives: tuple[Alternative, ...],
     # ) -> tuple[Voter, ...]:
-
+        self._phi = phi
         alternative_ids = tuple(
             alternative.id
             for alternative in alternatives
