@@ -245,11 +245,25 @@ class KLengthPOPreferenceGenerator(PreferenceGenerator):
 
 
 class NormalizedMallowsModel(PreferenceGenerator):
-    def __init__(self):
-        self._phi = 0.0
-        super().__init__()
-
-    def generate(self, num_voters, phi, alternatives) -> tuple[Voter, ...]:
+    def __init__(self,  theta_0: np.ndarray, seed: int | None = None):
+        self._rng = np.random.default_rng(seed)
+        self.theta_0 = theta_0
+        # super().__init__()
+        
+    def create_reference_ranking(self, alternatives: tuple[Alternative, ...]):
+        utilities = {
+            alt.id: float(self.theta_0 @ alt.features)
+            for alt in alternatives
+        }
+        reference_ranking = tuple(sorted(utilities, key=utilities.get, reverse=True))
+        return reference_ranking
+        
+    def generate(
+        self,
+        num_voters: int,
+        alternatives: tuple[Alternative, ...],
+        phi: float = 0.0
+        ) -> tuple[Voter, ...]:
         """
         Generates Preference profiles based on value of 
         """
@@ -258,18 +272,17 @@ class NormalizedMallowsModel(PreferenceGenerator):
             alternative.id
             for alternative in alternatives
         )
-
+        self._reference_ranking = self.create_reference_ranking(alternatives=alternatives)
+        
         if set(self._reference_ranking) != set(alternative_ids):
             raise ValueError(
                 "Reference ranking must contain exactly "
                 "the IDs of all alternatives."
             )
-
+        
         voters: list[Voter] = []
-
         for voter_id in range(num_voters):
             ranking = self._sample_ranking()
-
             voters.append(
                 Voter(
                     id=voter_id,
@@ -306,9 +319,7 @@ class NormalizedMallowsModel(PreferenceGenerator):
                     p=probabilities,
                 )
             )
-
             insertion_position = i - displacement
-
             ranking.insert(
                 insertion_position,
                 alternative_id,

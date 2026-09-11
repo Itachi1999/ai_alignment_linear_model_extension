@@ -31,12 +31,17 @@ class FeedbackArcSetSolver:
 
         # First, compute the indegree ordering of the vertices.
         ordering = self._compute_ordering(graph)
+        
+        # Check if graph is already a DAG
+        if graph.is_dag():
+            return FeedbackArcSetResult(dag=graph, removed_edges=(), ordering=ordering)
 
-        # Then, remove all backward edges.
-        return self._remove_backward_edges(
-            graph,
-            ordering,
-        )
+        # If the graph has cycles, remove all backward edges.
+        else:
+            return self._remove_backward_edges(
+                graph,
+                ordering,
+            )
 
     def _compute_ordering(
         self,
