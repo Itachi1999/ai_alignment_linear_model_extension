@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from ai_alignment_linear_model_extension.models.voter import Voter
 from ai_alignment_linear_model_extension.models.alternative import Alternative
-
+from ai_alignment_linear_model_extension.models.mallow import MallowsModelUtil
 
 class PreferenceGenerator(ABC):
     """
@@ -72,7 +72,6 @@ class UniformPreferenceGenerator(PreferenceGenerator):
             )
 
         return tuple(voters)
-    
 
 
 class LinearPreferenceGenerator(PreferenceGenerator):
@@ -245,14 +244,20 @@ class KLengthPOPreferenceGenerator(PreferenceGenerator):
 
 
 class NormalizedMallowsModel(PreferenceGenerator):
-    def __init__(self,  theta_0: np.ndarray, seed: int | None = None):
+    def __init__(self, dispersion: float, theta_0: np.ndarray, seed: int | None = None):
+        if not 0.0 <= dispersion <= 1.0:
+            raise ValueError(
+                "dispersion must be in [0, 1]."
+            )
+        
         self._rng = np.random.default_rng(seed)
-        self.theta_0 = theta_0
+        self._dispersion = dispersion
+        self._theta_0 = theta_0
         # super().__init__()
         
     def create_reference_ranking(self, alternatives: tuple[Alternative, ...]):
         utilities = {
-            alt.id: float(self.theta_0 @ alt.features)
+            alt.id: float(self._theta_0 @ alt.features)
             for alt in alternatives
         }
         reference_ranking = tuple(sorted(utilities, key=utilities.get, reverse=True))
@@ -262,12 +267,10 @@ class NormalizedMallowsModel(PreferenceGenerator):
         self,
         num_voters: int,
         alternatives: tuple[Alternative, ...],
-        phi: float = 0.0
         ) -> tuple[Voter, ...]:
         """
         Generates Preference profiles based on value of 
         """
-        self._phi = phi
         alternative_ids = tuple(
             alternative.id
             for alternative in alternatives
@@ -280,9 +283,12 @@ class NormalizedMallowsModel(PreferenceGenerator):
                 "the IDs of all alternatives."
             )
         
+        mallows_util = MallowsModelUtil(num_alternatives=len(alternatives), phi=self._dispersion)
+        phi = mallows_util.phi_from_normalized_dispersion(self._dispersion)
+        
         voters: list[Voter] = []
         for voter_id in range(num_voters):
-            ranking = self._sample_ranking()
+            ranking = self._sample_ranking(phi=phi)
             voters.append(
                 Voter(
                     id=voter_id,
@@ -292,7 +298,7 @@ class NormalizedMallowsModel(PreferenceGenerator):
 
         return tuple(voters)
 
-    def _sample_ranking(self) -> tuple[int, ...]:
+    def _sample_ranking(self, phi: float) -> tuple[int, ...]:
         ranking: list[int] = []
 
         for i, alternative_id in enumerate(
@@ -304,13 +310,13 @@ class NormalizedMallowsModel(PreferenceGenerator):
 
             positions = np.arange(i + 1)
 
-            if self._phi == 1.0:
+            if phi == 1.0:
                 probabilities = np.full(
                     i + 1,
                     1.0 / (i + 1),
                 )
             else:
-                weights = self._phi ** positions
+                weights = phi ** positions
                 probabilities = weights / weights.sum()
 
             displacement = int(

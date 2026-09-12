@@ -52,6 +52,8 @@ class LinearModelEvaluator:
                 for edge_key, z_val in z.items()
                 if z_val > self._tolerance
             )
+            
+        epsilon_l1_norm = sum(abs(epsilon_val) for epsilon_val in epsilon.values())
 
         epsilon_support = tuple(
             alternative.id
@@ -119,4 +121,5 @@ class LinearModelEvaluator:
             pmc_violation_percentage=100 * pmc_violations / graph.num_pmc_edges if graph.num_pmc_edges else 0.0,
             violated_edges=tuple(violated_edges),
             objective_value=result.objective_value,
+            epsilon_l1_norm=epsilon_l1_norm,
         )

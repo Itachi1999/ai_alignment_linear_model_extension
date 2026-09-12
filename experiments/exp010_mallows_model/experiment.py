@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from statistics import mean, stdev, fmean
+from ai_alignment_linear_model_extension.visualization.plot_data import ParameterSweepResult
 import hydra
 from omegaconf import DictConfig
 import numpy as np
@@ -36,12 +37,14 @@ class AllModelsComparisonMallows(BaseExperiment):
     """ 
     This class implements a synthetic experiment to test the expressibility of LP generated theta against the LP generated theta and epsilon.
     """
-    def __init__(self, cfg):
+    def __init__(self, cfg, dispersion: float):
         self._cfg = cfg
         self._rng = np.random.default_rng(cfg.seed)
+        self._dispersion = dispersion
 
     def setup(self) -> None:
-        self.theta_0 = np.random.normal(loc=self._cfg.data.mean, scale=self._cfg.data.std, size=self._cfg.data.dimension)
+        self._theta_0 = np.random.normal(loc=self._cfg.data.mean, scale=self._cfg.data.std, size=self._cfg.data.dimension)
+        
         self._data_generator = ElectionGenerator(
             feature_generator=GaussianFeatureGenerator(
                 mean=self._cfg.data.mean,
@@ -50,15 +53,13 @@ class AllModelsComparisonMallows(BaseExperiment):
             ),
             preference_generator=NormalizedMallowsModel(
                 seed=self._cfg.seed,
-                theta_0= self.theta_0,
+                theta_0= self._theta_0,
+                dispersion=self._dispersion,
                 # k=self._cfg.data.k
             ),
         )
-
         self._graph_builder = PreferenceGraphBuilder()
-
         self._fas_solver = FeedbackArcSetSolver()
-
         # Optimization parameter is unused in the LinearModelSolver, but we keep it for consistency with other experiments.
         self._old_lp_solver = LinearModelSolver(
             eta=self._cfg.optimization.eta,
@@ -69,13 +70,8 @@ class AllModelsComparisonMallows(BaseExperiment):
             lambda_= self._cfg.optimization.lambda_,
             solver=self._cfg.optimization.solver,
         )
-
         self._graph_builder = PreferenceGraphBuilder()
-
-        self._fas_solver = FeedbackArcSetSolver()
-
         self._evaluator = LinearModelEvaluator()
-        
         self._btl_evaluator = BTLModelEvaluator(eta = self._cfg.optimization.eta)
 
     def run_trial(
@@ -203,7 +199,7 @@ class AllModelsComparisonMallows(BaseExperiment):
     def sanity_check(self, alternatives, learned_theta, k, removed_edges = None):
         voter_utilities = {
             alternative.id: float(
-                self.theta_0 @ alternative.features
+                self._theta_0 @ alternative.features
             )
             for alternative in alternatives
         }
@@ -244,7 +240,6 @@ class AllModelsComparisonMallows(BaseExperiment):
         logging.debug(
             f"PO Edges removed in FAS: {len(removed_po)}"
         )
-        
 
     def summarize(
         self,
@@ -305,6 +300,13 @@ class AllModelsComparisonMallows(BaseExperiment):
                 
             ]
             
+            epsilon_l1_norms = [
+                trial.evaluation_result[model].epsilon_l1_norm
+                for trial in trials
+                if trial.evaluation_result[model].epsilon_l1_norm is not None
+                
+            ]
+            
             z_support_percentages = [
                 trial.evaluation_result[model].z_support_percentage
                 for trial in trials 
@@ -349,6 +351,10 @@ class AllModelsComparisonMallows(BaseExperiment):
 
                 mean_epsilon_sparsity=mean(epsilon_sparsities) if len(epsilon_sparsities) else None,
                 std_epsilon_sparsity=stdev(epsilon_sparsities) if len(epsilon_sparsities) else None,
+                
+                mean_epsilon_l1_norm=mean(epsilon_l1_norms) if len(epsilon_l1_norms) else None,
+                std_epsilon_l1_norm=stdev(epsilon_l1_norms) if len(epsilon_l1_norms) else None,
+                
                 mean_z_support_percentage=mean(z_support_percentages) if len(z_support_percentages) else None, 
                 std_z_support_percentage=stdev(z_support_percentages) if len(z_support_percentages) else None,    
                 )
@@ -357,6 +363,34 @@ class AllModelsComparisonMallows(BaseExperiment):
             trials=tuple(trials),
             statistics=statistics,
         )
+        
+def run_sweep(cfg: DictConfig) -> ParameterSweepResult:
+    results: dict[float, ExperimentResult] = {}
+
+    runner = ExperimentRunner()
+
+    for dispersion in cfg.dispersion.values:
+
+        phi = float(dispersion)
+        logging.info(
+            "Starting Mallows experiment: phi=%.2f",
+            phi,
+        )
+        experiment = AllModelsComparisonMallows(
+            cfg=cfg,
+            dispersion=phi,
+        )
+        result = runner.run(
+            experiment=experiment,
+            num_trials=cfg.num_trials,
+            seed=cfg.seed,
+        )
+        results[phi] = result
+
+    return ParameterSweepResult(
+        parameter_name="Normalized Mallows dispersion",
+        results=results,
+    )
 
 @hydra.main(
     version_base=None,
@@ -368,23 +402,19 @@ def main(cfg: DictConfig) -> None:
     exp_cfg = cfg.experiment
     print(f"Running experiment: {exp_cfg.name}")
     # print(f"Configuration:\n{cfg.pretty()}")
-    experiment = AllModelsComparison(exp_cfg)
 
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+    
+    sweep_result = run_sweep(cfg=cfg)
 
     logger = ExperimentLogger()
     logger.setup_logging(output_dir)
     logging.info("Starting %s", exp_cfg.name)
-
-    runner = ExperimentRunner()
-    result = runner.run(
-        experiment=experiment,
-        num_trials=exp_cfg.num_trials,
-        seed=exp_cfg.seed,
-    )
     
-    plots = ViolationPlots(result)
-    plots.create_all()
+    
+    plots = ViolationPlots(sweep_result)
+    
+    plot.
     
     logger.save_plots(
         plots.plots,

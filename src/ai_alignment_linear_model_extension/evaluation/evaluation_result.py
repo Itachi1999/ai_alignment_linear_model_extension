@@ -32,6 +32,9 @@ class EvaluationResult:
 
     # z support
     z_support_percentage: float | None = None
+    
+    # epsilon l1 norm
+    epsilon_l1_norm: float | None = None
 
     objective_value: float | None = None
     loss_value: float | None = None
