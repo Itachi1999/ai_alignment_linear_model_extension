@@ -546,9 +546,196 @@ class ViolationPlots:
             figure,
         )
 
+    
+    def plot_mallows_summary(
+        self,
+        sweep: ParameterSweepResult,
+        confidence_level: float = 0.95,
+    ) -> Figure:
+
+        sns.set_theme(
+            context="paper",
+            style="whitegrid",
+            font_scale=1.05,
+        )
+
+        fig, axes = plt.subplots(
+            2,
+            2,
+            figsize=(7.2, 5.8),
+            constrained_layout=True,
+        )
+
+        specs = [
+            (axes[0, 0], "total", "Total violations", "Violation rate (%)"),
+            (axes[0, 1], "po", "Pareto Optimality", "Violation rate (%)"),
+            (axes[1, 0], "pmc",
+            "Pairwise Majority Consistency", "Violation rate (%)"),
+        ]
+
+        for ax, metric, title, ylabel in specs:
+
+            df = self._sweep_dataframe(
+                sweep,
+                metric,
+            )
+
+            sns.lineplot(
+                data=df,
+                x="dispersion",
+                y="value",
+                hue="model",
+                marker="o",
+                linewidth=2.0,
+                markersize=4.5,
+                errorbar=("ci", confidence_level * 100),
+                ax=ax,
+            )
+
+            ax.set_title(title)
+            ax.set_xlabel(r"Mallows dispersion $\phi$")
+            ax.set_ylabel(ylabel)
+
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+            legend = ax.get_legend()
+            if legend is not None:
+                legend.remove()
+
+        # epsilon panel
+        epsilon_df = self._epsilon_dataframe(sweep)
+
+        ax = axes[1, 1]
+
+        sns.lineplot(
+            data=epsilon_df,
+            x="dispersion",
+            y="value",
+            hue="model",
+            marker="o",
+            linewidth=2.0,
+            markersize=4.5,
+            errorbar=("ci", confidence_level * 100),
+            ax=ax,
+        )
+
+        ax.set_title(r"Candidate-level repair")
+        ax.set_xlabel(r"Mallows dispersion $\phi$")
+        ax.set_ylabel(r"$\|\epsilon\|_1$")
+
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+        legend = ax.get_legend()
+        if legend is not None:
+            legend.remove()
+
+        # Shared legend
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+
+        fig.legend(
+            handles,
+            labels,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.02),
+            ncol=3,
+            frameon=False,
+        )
+
+        return fig
+    
     # =========================================================
     # Internal helpers
     # =========================================================
+    def _epsilon_dataframe(
+        self,
+        sweep: ParameterSweepResult,
+    ) -> pd.DataFrame:
+
+        rows = []
+
+        for phi, experiment_result in sweep.results.items():
+
+            for trial in experiment_result.trials:
+
+                if not trial.success:
+                    continue
+
+                if trial.evaluation_result is None:
+                    continue
+
+                for model_type in (
+                    ModelType.EPSILON_LP,
+                    ModelType.KT_MIN_LP,
+                ):
+
+                    result = trial.evaluation_result.get(model_type)
+
+                    if result is None or result.epsilon_l1_norm is None:
+                        continue
+
+                    epsilon_l1 = result.epsilon_l1_norm
+
+                    rows.append(
+                        {
+                            "dispersion": phi,
+                            "trial": trial.trial,
+                            "model": model_type.label,
+                            "value": epsilon_l1,
+                        }
+                    )
+
+        return pd.DataFrame(rows)
+    
+    
+    def _sweep_dataframe(
+        self,
+        sweep: ParameterSweepResult,
+        metric: str,
+    ) -> pd.DataFrame:
+
+        rows = []
+
+        for phi, experiment_result in sweep.results.items():
+
+            for trial in experiment_result.trials:
+
+                if not trial.success:
+                    continue
+
+                if trial.evaluation_result is None:
+                    continue
+
+                for model_type, evaluation in (
+                    trial.evaluation_result.items()
+                ):
+
+                    if metric == "total":
+                        value = evaluation.violation_percentage
+
+                    elif metric == "po":
+                        value = evaluation.po_violation_percentage
+
+                    elif metric == "pmc":
+                        value = evaluation.pmc_violation_percentage
+
+                    else:
+                        raise ValueError(
+                            f"Unknown metric: {metric}"
+                        )
+
+                    rows.append(
+                        {
+                            "dispersion": phi,
+                            "trial": trial.trial,
+                            "model": model_type.label,
+                            "value": value,
+                        }
+                    )
+
+        return pd.DataFrame(rows)
+
 
     def _store(
         self,

@@ -30,6 +30,9 @@ class ExperimentStatistics:
     mean_epsilon_sparsity: float | None = None
     std_epsilon_sparsity: float | None = None
     
+    mean_epsilon_l1_norm: float | None = None
+    std_epsilon_l1_norm: float | None = None
+    
     mean_z_support_percentage: float | None = None
     std_z_support_percentage: float | None = None
 

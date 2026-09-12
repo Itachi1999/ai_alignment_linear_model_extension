@@ -14,7 +14,7 @@ from matplotlib.figure import Figure
 
 from experiments.core.experiment_statistics import ExperimentResult
 from experiments.core.trial_result import TrialResult
-from ai_alignment_linear_model_extension.visualization.plot_data import PlotRecord
+from ai_alignment_linear_model_extension.visualization.plot_data import ParameterSweepResult, PlotRecord
 
 
 class BaseExperiment(ABC):
@@ -92,16 +92,22 @@ class ExperimentLogger:
 
     def save(
         self,
-        result: ExperimentResult,
+        result: ExperimentResult | ParameterSweepResult,
         config: DictConfig,
         output_dir: Path,
     ) -> None:
 
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        self._save_config(config, output_dir)
-        self._save_summary(result, output_dir)
-        self._save_trials(result, output_dir)
+        if isinstance(result, ParameterSweepResult):
+            for phi, result in result.results.items():
+                self._save_config(config, output_dir)
+                self._save_summary(result, output_dir, phi = phi)
+                self._save_trials(result, output_dir, phi = phi)
+        else:
+            self._save_config(config, output_dir)
+            self._save_summary(result, output_dir)
+            self._save_trials(result, output_dir)
 
     def _save_config(
         self,
@@ -118,14 +124,17 @@ class ExperimentLogger:
         self,
         result: ExperimentResult,
         output_dir: Path,
+        phi: float | None = None,
     ) -> None:
-
+        json_result = {}
+        json_result["phi"] = phi if phi is not None else None
+        json_result.update({
+            model.label : asdict(stat)
+            for model, stat in result.statistics.items()
+        })
         with (output_dir / "summary.json").open("w") as file:
             json.dump(
-                    {
-                        model.label : asdict(stat)
-                        for model, stat in result.statistics.items()
-                    },
+                json_result,
                 file,
                 indent=4,
             )
@@ -134,6 +143,7 @@ class ExperimentLogger:
         self,
         result: ExperimentResult,
         output_dir: Path,
+        phi: float | None = None,
     ) -> None:
 
         rows = []
@@ -141,6 +151,7 @@ class ExperimentLogger:
             for trial in result.trials:
                 evaluation = trial.evaluation_result[model]
                 rows.append({
+                    "phi": phi if phi is not None else None,
                     "model": model.label,
                     "trial": trial.trial,
                     "seed": trial.seed,
@@ -201,13 +212,14 @@ class ExperimentLogger:
         figure: Figure,
         filename: str,
         output_dir: Path,
+        dpi: int | None = 300,
     ) -> None:
         figures_dir = output_dir / "figures"
         figures_dir.mkdir(parents=True, exist_ok=True)
 
         figure.savefig(
             figures_dir / filename,
-            dpi=300,
+            dpi=dpi,
             bbox_inches="tight",
         )
 

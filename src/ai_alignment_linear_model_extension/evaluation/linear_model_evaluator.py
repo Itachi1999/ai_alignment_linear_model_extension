@@ -69,7 +69,7 @@ class LinearModelEvaluator:
                     features[edge.source] - features[edge.target],
                 )
             )
-            print(f"Score: {score}")
+            # print(f"Score: {score}")
             epsilon_diff = (
                 result.epsilon[edge.source]
                 - result.epsilon[edge.target]

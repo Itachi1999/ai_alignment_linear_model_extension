@@ -195,7 +195,7 @@ class AllModelsComparisonMallows(BaseExperiment):
             fas_size=len(fas_result.removed_edges),
             timers=tuple(timers),
         )
-    
+
     def sanity_check(self, alternatives, learned_theta, k, removed_edges = None):
         voter_utilities = {
             alternative.id: float(
@@ -369,7 +369,7 @@ def run_sweep(cfg: DictConfig) -> ParameterSweepResult:
 
     runner = ExperimentRunner()
 
-    for dispersion in cfg.dispersion.values:
+    for dispersion in cfg.dispersion.grid:
 
         phi = float(dispersion)
         logging.info(
@@ -405,7 +405,7 @@ def main(cfg: DictConfig) -> None:
 
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
     
-    sweep_result = run_sweep(cfg=cfg)
+    sweep_result = run_sweep(cfg=exp_cfg)
 
     logger = ExperimentLogger()
     logger.setup_logging(output_dir)
@@ -414,7 +414,23 @@ def main(cfg: DictConfig) -> None:
     
     plots = ViolationPlots(sweep_result)
     
-    plot.
+    figure = plots.plot_mallows_summary(
+        sweep=sweep_result,
+        confidence_level=0.95,
+    )
+
+    logger.save_figure(
+        figure,
+        filename="mallows_dispersion_summary.pdf",
+        output_dir=output_dir,
+    )
+
+    logger.save_figure(
+        figure,
+        filename="mallows_dispersion_summary.png",
+        output_dir=output_dir,
+        dpi=600,
+    )
     
     logger.save_plots(
         plots.plots,
@@ -423,7 +439,7 @@ def main(cfg: DictConfig) -> None:
     plots.clear()
 
     logger.save(
-        result=result,
+        result=sweep_result,
         config=cfg,
         output_dir=output_dir,
     )
