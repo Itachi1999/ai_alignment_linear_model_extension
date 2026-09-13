@@ -416,6 +416,9 @@ def main(cfg: DictConfig) -> None:
     
     figure = plots.plot_mallows_summary(
         sweep=sweep_result,
+        num_voters=exp_cfg.data.num_voters,
+        num_alternatives=exp_cfg.data.num_alternatives,
+        feature_dimension=exp_cfg.data.dimension,
         confidence_level=0.95,
     )
 

@@ -5,8 +5,8 @@ num_trials: 20
 seed: 42
 
 data:
-  num_voters: 20
-  num_alternatives: 15
+  num_voters: 3
+  num_alternatives: 7
   dimension: 5
   mean: 0.0
   std: 1.0

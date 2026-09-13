@@ -81,6 +81,10 @@ class LinearModelSolver:
         # Preference graph constraints
 
         for edge in graph.edges:
+            if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+                eta0 = self._eta
+            else:
+                eta0 = 1e-2 * self._eta 
             # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
             x_a = features[edge.source]
             x_b = features[edge.target]
@@ -89,7 +93,7 @@ class LinearModelSolver:
                 (theta @ (x_a - x_b))
                 + (epsilon[edge.source]
                 - epsilon[edge.target])
-                >= self._eta
+                >= eta0
             )
 
         # Absolute value constraints

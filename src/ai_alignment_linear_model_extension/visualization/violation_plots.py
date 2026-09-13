@@ -550,6 +550,10 @@ class ViolationPlots:
     def plot_mallows_summary(
         self,
         sweep: ParameterSweepResult,
+        *,
+        num_voters: int,
+        num_alternatives: int,
+        feature_dimension: int,
         confidence_level: float = 0.95,
     ) -> Figure:
 
@@ -564,6 +568,10 @@ class ViolationPlots:
             2,
             figsize=(7.2, 5.8),
             constrained_layout=True,
+            gridspec_kw={
+                "hspace": 0.10,
+                "wspace": 0.10,
+            }
         )
 
         specs = [
@@ -637,7 +645,7 @@ class ViolationPlots:
         fig.legend(
             handles,
             labels,
-            loc="upper center",
+            loc="lower center",
             bbox_to_anchor=(0.5, 1.02),
             ncol=3,
             frameon=False,

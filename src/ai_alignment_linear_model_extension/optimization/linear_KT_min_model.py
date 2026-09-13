@@ -87,6 +87,9 @@ class KTMinLinearModelSolver:
 
         for edge in graph.edges:
             # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+            #     eta0 = self._eta
+            # else:
+            #     eta0 = 1e-2 * self._eta 
             a = edge.source
             b = edge.target
 
@@ -117,7 +120,12 @@ class KTMinLinearModelSolver:
         )
 
         # Objective
-
+        y = {}
+        # for edge in graph.edges:
+        #     a = edge.source
+        #     b = edge.target
+        #     y[(a, b)] = z[(a, b)] * edge.weight
+            
         objective = cp.Minimize(
             cp.sum(list(t.values()))
             + self._lambda * cp.sum(list(z.values()))
