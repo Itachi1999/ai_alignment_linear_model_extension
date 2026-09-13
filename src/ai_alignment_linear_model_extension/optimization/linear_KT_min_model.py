@@ -425,17 +425,20 @@ class BordaKTMinLinearModelSolver:
         borda = Borda(election)
         borda_scores = borda.scores()
         
+        y = {}
         for edge in graph.edges:
             a = edge.source
             b = edge.target
             
             if borda_scores[a] < borda_scores[b]:
-                constraints.append(z[(a, b)] == 0)
+                y[(a, b)] = 0.0 * z[(a, b)]  # This effectively removes the z_ab variable from the objective for this edge
+            else:   
+                y[(a, b)] = z[(a, b)]
 
         # Objective         
         objective = cp.Minimize(
             cp.sum(list(t.values()))
-            + self._lambda * cp.sum(list(z.values()))
+            + self._lambda * cp.sum(list(y.values()))
         )
 
         problem = cp.Problem(
