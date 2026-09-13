@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - experiment: experiment10
+  - experiment: experiment11
   # - data: gaussian
   # - optimization: lp
     # - logging: default

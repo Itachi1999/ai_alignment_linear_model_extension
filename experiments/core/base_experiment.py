@@ -98,14 +98,12 @@ class ExperimentLogger:
     ) -> None:
 
         output_dir.mkdir(parents=True, exist_ok=True)
+        self._save_config(config, output_dir)
 
         if isinstance(result, ParameterSweepResult):
-            for phi, result in result.results.items():
-                self._save_config(config, output_dir)
-                self._save_summary(result, output_dir, phi = phi)
-                self._save_trials(result, output_dir, phi = phi)
+            self._save_sweep_summary(result, output_dir)
+            self._save_sweep_trials(result, output_dir)
         else:
-            self._save_config(config, output_dir)
             self._save_summary(result, output_dir)
             self._save_trials(result, output_dir)
 
@@ -124,17 +122,11 @@ class ExperimentLogger:
         self,
         result: ExperimentResult,
         output_dir: Path,
-        phi: float | None = None,
     ) -> None:
-        json_result = {}
-        json_result["phi"] = phi if phi is not None else None
-        json_result.update({
-            model.label : asdict(stat)
-            for model, stat in result.statistics.items()
-        })
+        
         with (output_dir / "summary.json").open("w") as file:
             json.dump(
-                json_result,
+                result,
                 file,
                 indent=4,
             )
@@ -143,30 +135,27 @@ class ExperimentLogger:
         self,
         result: ExperimentResult,
         output_dir: Path,
-        phi: float | None = None,
     ) -> None:
 
         rows = []
-        for model, stat in result.statistics.items():
+        for model, _ in result.statistics.items():
             for trial in result.trials:
                 evaluation = trial.evaluation_result[model]
                 rows.append({
-                    "phi": phi if phi is not None else None,
                     "model": model.label,
                     "trial": trial.trial,
                     "seed": trial.seed,
 
                     "objective": evaluation.objective_value,
                     "loss_value": evaluation.loss_value,
-                    
                     "fas_size": trial.fas_size,
 
                     "num_violations": evaluation.num_violations,
                     "num_po_violations": evaluation.num_po_violations,
                     "num_pmc_violations": evaluation.num_pmc_violations,
 
+                    "epsilon_l1_norm": evaluation.epsilon_l1_norm,
                     "epsilon_support_percentage": evaluation.epsilon_support_percentage,
-
                     "epsilon_sparsity": evaluation.epsilon_sparsity,
 
                     **{
@@ -174,6 +163,66 @@ class ExperimentLogger:
                         for timer in trial.timers
                     },
                 })
+
+        pd.DataFrame(rows).to_csv(
+            output_dir / "trials.csv",
+            index=False,
+        )
+        
+    def _save_sweep_summary(
+        self,
+        result: ParameterSweepResult,
+        output_dir: Path,
+    ) -> None:
+        json_result = {}
+
+        for phi, experiment_result in result.results.items():
+            json_result[str(phi)] = {
+                model.label: asdict(stat)
+                for model, stat in experiment_result.statistics.items()
+            }
+
+        with (output_dir / "summary.json").open("w") as file:
+            json.dump(
+                json_result,
+                file,
+                indent=4,
+            )
+            
+            
+    def _save_sweep_trials(
+        self,
+        result: ParameterSweepResult,
+        output_dir: Path,
+    ) -> None:
+        rows = []
+
+        for phi, experiment_result in result.results.items():
+            for model, _ in experiment_result.statistics.items():
+                for trial in experiment_result.trials:
+                    evaluation = trial.evaluation_result[model]
+
+                    rows.append({
+                        "phi": phi,
+                        "model": model.label,
+                        "trial": trial.trial,
+                        "seed": trial.seed,
+                        "objective": evaluation.objective_value,
+                        "loss_value": evaluation.loss_value,
+                        "fas_size": trial.fas_size,
+                        "num_violations": evaluation.num_violations,
+                        "num_po_violations": evaluation.num_po_violations,
+                        "num_pmc_violations": evaluation.num_pmc_violations,
+                        "epsilon_l1_norm": evaluation.epsilon_l1_norm,
+                        "epsilon_support_percentage": (
+                            evaluation.epsilon_support_percentage
+                        ),
+                        "epsilon_sparsity": evaluation.epsilon_sparsity,
+                        **{
+                            f"time_{timer.name}": timer.elapsed_time
+                            for timer in trial.timers
+                        },
+                    })
 
         pd.DataFrame(rows).to_csv(
             output_dir / "trials.csv",
@@ -236,121 +285,3 @@ class ExperimentLogger:
                 filename=f"{plot.name}.png",
                 output_dir=output_dir,
             )
-
-
-# class ExperimentLogger:
-
-#     def save_summary(
-#         self,
-#         result: ExperimentResult,
-#         output_dir: Path,
-#     ) -> None:
-
-#         output_dir.mkdir(parents=True, exist_ok=True)
-
-#         summary = asdict(result.statistics)
-
-#         with (output_dir / "summary.json").open("w") as file:
-#             json.dump(summary, file, indent=4)
-
-#     def save_trials(
-#         self,
-#         result: ExperimentResult,
-#         output_dir: Path,
-#     ) -> None:
-
-#         output_dir.mkdir(parents=True, exist_ok=True)
-
-#         with (output_dir / "trials.csv").open(
-#             "w",
-#             newline="",
-#         ) as file:
-
-#             writer = csv.writer(file)
-
-#             writer.writerow(
-#                 [
-#                     "trial",
-#                     "seed",
-#                     "objective",
-#                     "fas_size",
-#                     "violations",
-#                     "po_violations",
-#                     "pmc_violations",
-#                     "epsilon_support_percentage",
-#                     "epsilon_sparsity",
-#                 ]
-#             )
-
-#             for trial in result.trials:
-
-#                 writer.writerow(
-#                     [
-#                         trial.trial,
-#                         trial.seed,
-#                         trial.lp_result.objective_value,
-#                         trial.fas_size,
-#                         trial.evaluation_result.num_violations,
-#                         trial.evaluation_result.num_po_violations,
-#                         trial.evaluation_result.num_pmc_violations,
-#                         trial.evaluation_result.epsilon_support_percentage,
-#                         trial.evaluation_result.epsilon_sparsity,
-#                     ]
-#                 )
-
-#     def save_config(
-#         self,
-#         cfg: DictConfig,
-#         output_dir: Path,
-#     ) -> None:
-
-#         output_dir.mkdir(parents=True, exist_ok=True)
-
-#         OmegaConf.save(
-#             config=cfg,
-#             f=output_dir / "config.yaml",
-#         )
-
-#     def save_log(
-#         self,
-#         message: str,
-#         output_dir: Path,
-#     ) -> None:
-
-#         output_dir.mkdir(parents=True, exist_ok=True)
-
-#         with (output_dir / "log.txt").open("a") as file:
-#             file.write(message + "\n")
-
-#     def save_table(
-#         self,
-#         table: pd.DataFrame,
-#         filename: str,
-#         output_dir: Path,
-#     ) -> None:
-
-#         output_dir.mkdir(parents=True, exist_ok=True)
-
-#         table.to_csv(
-#             output_dir / filename,
-#             index=False,
-#         )
-
-
-#     def save_figure(
-#         self,
-#         figure: plt.Figure,
-#         filename: str,
-#         output_dir: Path,
-#     ) -> None:
-
-#         figures_dir = output_dir / "figures"
-#         figures_dir.mkdir(parents=True, exist_ok=True)
-
-#         figure.savefig(
-#             figures_dir / filename,
-#             dpi=300,
-#             bbox_inches="tight",
-#         )
-
-#         plt.close(figure)
