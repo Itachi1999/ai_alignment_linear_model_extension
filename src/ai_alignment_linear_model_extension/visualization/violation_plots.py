@@ -676,8 +676,11 @@ class ViolationPlots:
                 for model_type in (
                     ModelType.EPSILON_LP,
                     ModelType.KT_MIN_LP,
+                    ModelType.WEIGHTED_KT_MIN_LP,
+                    ModelType.BORDA_KT_MIN_LP,
                 ):
-
+                    if model_type not in trial.evaluation_result:
+                        continue
                     result = trial.evaluation_result.get(model_type)
 
                     if result is None or result.epsilon_l1_norm is None:
