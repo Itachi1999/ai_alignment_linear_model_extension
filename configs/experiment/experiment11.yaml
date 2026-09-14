@@ -1,13 +1,13 @@
 name: exp011_mallows_5_models
 summary: Synthetic experiment with Gaussian candidate data and Normalized Mallows model preference generator. Here, we check the PO and PMC violations of the old epsilon LP and the new KT min LP model and the BTL linear model and also the weighted KT min LP model and the Borda KT min LP model.  
 
-num_trials: 50
+num_trials: 20
 seed: 42
 
 data:
-  num_voters: 3
-  num_alternatives: 6
-  dimension: 5
+  num_voters: 11
+  num_alternatives: 50
+  dimension: 25
   mean: 0.0
   std: 1.0
 
