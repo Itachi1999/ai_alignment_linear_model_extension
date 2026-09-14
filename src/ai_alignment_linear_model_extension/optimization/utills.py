@@ -13,10 +13,10 @@ class ModelType(Enum):
     @property
     def label(self) -> str:
         return {
-            ModelType.EPSILON_LP: "LP2 ($ \theta $ Only)",
-            ModelType.KT_MIN_LP: "LP3 ($ \theta $ Only)",
-            ModelType.WEIGHTED_KT_MIN_LP: "Weighted LP3 ($ \theta $ Only)",
-            ModelType.BORDA_KT_MIN_LP: "Borda LP3 ($ \theta $ Only)",
+            ModelType.EPSILON_LP: r"LP2 ($\theta$ Only)",
+            ModelType.KT_MIN_LP: r"LP3 ($\theta$ Only)",
+            ModelType.WEIGHTED_KT_MIN_LP: r"Weighted LP3 ($\theta$ Only)",
+            ModelType.BORDA_KT_MIN_LP: r"Borda LP3 ($\theta$ Only)",
             ModelType.BTL: "BTL",
             ModelType.BTL_HINGE: "BTL Hinge",
             ModelType.BTL_LINEAR: "Linear BTL",
