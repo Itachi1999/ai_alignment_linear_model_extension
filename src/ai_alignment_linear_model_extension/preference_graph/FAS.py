@@ -16,7 +16,7 @@ class FeedbackArcSetResult:
 
     dag: PreferenceGraph
     removed_edges: tuple[Edge, ...]
-    ordering: tuple[int, ...]
+    ordering: tuple[int | str, ...]
 
 
 class FeedbackArcSetSolver:
@@ -46,16 +46,16 @@ class FeedbackArcSetSolver:
     def _compute_ordering(
         self,
         graph: PreferenceGraph,
-    ) -> tuple[int, ...]:
+    ) -> tuple[int | str, ...]:
         """
         Return the indegree ordering.
         """
         return tuple(sorted(graph.vertices, key=graph.in_degree))
-
+    
     def _remove_backward_edges(
         self,
         graph: PreferenceGraph,
-        ordering: tuple[int, ...],
+        ordering: tuple[int | str, ...],
     ) -> FeedbackArcSetResult:
         """
         Remove all backward edges.

@@ -8,7 +8,7 @@ class Alternative:
     Alternatives are used in the context of linear models for AI alignment where each alternatives or candidates are LLM responses, where each alternative is characterized by a unique identifier, a dimension indicating the size of its feature vector, and the feature vector itself.
     """
 
-    id: int
+    id: int | str
     dimension: int
     features: np.ndarray
 

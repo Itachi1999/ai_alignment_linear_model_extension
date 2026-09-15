@@ -56,3 +56,16 @@ class ElectionGenerator:
             alternatives=alternatives,
             voters=voters,
         )
+
+class SOCElectionGenerator(ElectionGenerator):
+    """"
+    Generates a complete election from SOC data.
+    """
+
+    def __init__(
+        self,
+        feature_generator: FeatureGenerator,
+        preference_generator: PreferenceGenerator,
+        soc_data_path: str,
+    ) -> None:
+        super().__init__(feature_generator, preference_generator)

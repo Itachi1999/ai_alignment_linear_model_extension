@@ -22,11 +22,11 @@ class PreferenceGraph:
 
     # Basic graph construction
 
-    def add_vertex(self, vertex: int) -> None:
+    def add_vertex(self, vertex: int | str) -> None:
         """Add a vertex."""
         self._graph.add_node(vertex)
 
-    def add_vertices(self, vertices: list[int] | tuple[int, ...]) -> None:
+    def add_vertices(self, vertices: list[int | str] | tuple[int | str, ...]) -> None:
         """Add multiple vertices."""
         self._graph.add_nodes_from(vertices)
 
@@ -39,16 +39,16 @@ class PreferenceGraph:
             edge_type=edge.edge_type,
         )
 
-    def in_degree(self, vertex: int) -> int:
+    def in_degree(self, vertex: int | str) -> int:
         return self._graph.in_degree(vertex)
 
-    def out_degree(self, vertex: int) -> int:
+    def out_degree(self, vertex: int | str) -> int:
         return self._graph.out_degree(vertex)
 
     # Properties
 
     @property
-    def vertices(self) -> tuple[int, ...]:
+    def vertices(self) -> tuple[int | str, ...]:
         return tuple(self._graph.nodes)
 
     @property
@@ -91,17 +91,17 @@ class PreferenceGraph:
         """Return True iff the graph is acyclic."""
         return nx.is_directed_acyclic_graph(self._graph)
 
-    def topological_order(self) -> tuple[int, ...]:
+    def topological_order(self) -> tuple[int | str, ...]:
         """Return a topological ordering."""
         return tuple(nx.topological_sort(self._graph))
 
-    def has_edge(self, source: int, target: int) -> bool:
+    def has_edge(self, source: int | str, target: int | str) -> bool:
         return self._graph.has_edge(source, target)
 
-    def successors(self, vertex: int) -> tuple[int, ...]:
+    def successors(self, vertex: int | str) -> tuple[int | str, ...]:
         return tuple(self._graph.successors(vertex))
 
-    def predecessors(self, vertex: int) -> tuple[int, ...]:
+    def predecessors(self, vertex: int | str) -> tuple[int | str, ...]:
         return tuple(self._graph.predecessors(vertex))
 
     # Utilities

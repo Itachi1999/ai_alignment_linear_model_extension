@@ -19,9 +19,9 @@ class MarginalMatrix:
 
     i.e., the fraction of voters preferring alternative a over b.
     """
-    alternative_ids: tuple[int, ...]
+    alternative_ids: tuple[int | str, ...]
     matrix: np.ndarray
-    _id_to_index: dict[int, int] = field(
+    _id_to_index: dict[int | str, int] = field(
         init=False,
         repr=False,
         compare=False,
@@ -69,7 +69,7 @@ class MarginalMatrix:
 
     # Query methods
 
-    def weight(self, a: int, b: int) -> float:
+    def weight(self, a: int | str, b: int | str) -> float:
         """
         Return w_{a ≻ b}.
         """
@@ -78,7 +78,7 @@ class MarginalMatrix:
 
         return float(self.matrix[ia, ib])
 
-    def margin(self, a: int, b: int) -> float:
+    def margin(self, a: int | str, b: int | str) -> float:
         """
         Return
             w_{a ≻ b} - w_{b ≻ a}.
@@ -87,7 +87,7 @@ class MarginalMatrix:
         ib = self._id_to_index[b]
         return self.weight(ia, ib) - self.weight(ib, ia)
 
-    def majority_prefers(self, a: int, b: int) -> bool:
+    def majority_prefers(self, a: int | str, b: int | str) -> bool:
         """
         True iff a is preferred to b by a strict majority.
         """
@@ -98,7 +98,7 @@ class MarginalMatrix:
         # print(f"Majority prefers {a} over {b}: {(not np.isclose(self.weight(ia, ib), 0.5)) and (self.weight(ia, ib) > 0.5)}, weight: {self.weight(ia, ib)}")
         return (not np.isclose(self.weight(ia, ib), 0.5)) and (self.weight(ia, ib) > 0.5)
 
-    def is_tie(self, a: int, b: int) -> bool:
+    def is_tie(self, a: int | str, b: int | str) -> bool:
         """
         True iff exactly half the voters prefer each alternative.
         """

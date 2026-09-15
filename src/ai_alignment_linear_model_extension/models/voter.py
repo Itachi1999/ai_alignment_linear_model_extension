@@ -8,9 +8,9 @@ from typing import Dict
 class Voter:
     """Represents a voter with a complete ranking of alternatives."""
 
-    id: int
-    ranking: tuple[int, ...]
-    _rank_lookup: Dict[int, int] = field(
+    id: int | str
+    ranking: tuple[int | str, ...]
+    _rank_lookup: Dict[int | str, int] = field(
         init=False,
         repr=False,
         compare=False,

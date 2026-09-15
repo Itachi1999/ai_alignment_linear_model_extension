@@ -10,7 +10,7 @@ class LPResult:
     Result of solving the linear programming problem of the AI alignment model.
     """
     theta: np.ndarray
-    epsilon: dict[int, float]
+    epsilon: dict[int | str, float]
     objective_value: float
     status: str
-    z: dict[tuple[int, ...], float] | None = None
+    z: dict[tuple[int | str, ...], float] | None = None

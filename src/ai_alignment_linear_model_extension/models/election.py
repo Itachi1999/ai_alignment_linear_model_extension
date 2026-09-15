@@ -14,7 +14,7 @@ class Election:
 
 
     # Dctionary for quick lookup of alternatives and voters by their IDs. Otherwise, we would have to iterate through the lists to find a specific alternative or voter.
-    _alternative_lookup: Dict[int, Alternative] = field(
+    _alternative_lookup: Dict[int | str, Alternative] = field(
         init=False,
         repr=False,
         compare=False,
@@ -129,11 +129,11 @@ class Election:
 
     # Convenience methods
 
-    def get_alternative(self, alternative_id: int) -> Alternative:
+    def get_alternative(self, alternative_id: int | str) -> Alternative:
         """Return the alternative with the given ID. """
         return self._alternative_lookup[alternative_id]
 
-    def get_voter(self, voter_id: int) -> Voter:
+    def get_voter(self, voter_id: int | str) -> Voter:
         """Return the voter with the given ID. """
         return self._voter_lookup[voter_id]
 
@@ -157,7 +157,6 @@ class Election:
         #Returns a copy of the ranking matrix to prevent accidental modifications to the original data.
 
     # String representation
-
     def __str__(self) -> str:
         return (
             f"Election(num_voters={self.num_voters}, num_alternatives={self.num_alternatives}, dimension={self.dimension})"

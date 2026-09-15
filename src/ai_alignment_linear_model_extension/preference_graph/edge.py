@@ -16,8 +16,8 @@ class MajorityEdge:
     Directed edge in a preference graph.
     """
 
-    source: int
-    target: int
+    source: int | str
+    target: int | str
     weight: float
     edge_type: PreferenceEdgeType = PreferenceEdgeType.MAJORITY
 

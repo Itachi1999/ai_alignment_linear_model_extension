@@ -20,13 +20,13 @@ class BTLModel:
         A dictionary mapping AlternativeIDs to their estimated scores.
     """
 
-    def __init__(self, scores: dict[int, float], marginal_matrix: MarginalMatrix, num_voters:int) -> None:
+    def __init__(self, scores: dict[int | str, float], marginal_matrix: MarginalMatrix, num_voters:int) -> None:
         self.scores = scores
         self.marginal_matrix = marginal_matrix
         self.num_voters = num_voters
 
     @property
-    def alternative_ids(self) -> tuple[int, ...]:
+    def alternative_ids(self) -> tuple[int | str, ...]:
         return self.marginal_matrix.alternative_ids
 
     @property
@@ -60,13 +60,13 @@ class BTLModel:
         prob = scipy.special.expit(score1 - score2)
         return prob
 
-    def log_likelihood(self, scores: dict[int, float]) -> float:
+    def log_likelihood(self, scores: dict[int | str, float]) -> float:
         """
         Calculate the log-likelihood of the model given a list of pairwise comparisons.
 
         Parameters:
         -----------
-        scores: dict[int, float]
+        scores: dict[int | str, float]
             A dictionary mapping AlternativeIDs to their scores.
 
         Returns:
@@ -154,17 +154,17 @@ class BTLHingeModel:
 
     Attributes:
     -----------
-    scores: dict[int, float]
+    scores: dict[int | str, float]
         A dictionary mapping AlternativeIDs to their estimated scores.
     """
 
-    def __init__(self, scores: dict[int, float], marginal_matrix: MarginalMatrix, num_voters:int) -> None:
+    def __init__(self, scores: dict[int | str, float], marginal_matrix: MarginalMatrix, num_voters:int) -> None:
         self.scores = scores
         self.marginal_matrix = marginal_matrix
         self.num_voters = num_voters
 
     @property
-    def alternative_ids(self) -> tuple[int, ...]:
+    def alternative_ids(self) -> tuple[int | str, ...]:
         return self.marginal_matrix.alternative_ids
 
     @property
@@ -198,13 +198,13 @@ class BTLHingeModel:
         prob = scipy.special.expit(score1 - score2)
         return prob
 
-    def log_likelihood(self, scores: dict[int, float]) -> float:
+    def log_likelihood(self, scores: dict[int | str, float]) -> float:
         """
         Calculate the log-likelihood of the model given a list of pairwise comparisons.
 
         Parameters:
         -----------
-        scores: dict[int, float]
+        scores: dict[int | str, float]
             A dictionary mapping AlternativeIDs to their scores.
 
         Returns:
@@ -243,7 +243,7 @@ class BTLHingeModel:
         self.scores = {alt_id: 0.0 for alt_id in self.alternative_ids}
 
         def hinge_loss(
-            scores: dict[int, float],
+            scores: dict[int | str, float],
             margin: float = 1.0,
         ) -> float:
 
@@ -302,7 +302,7 @@ class BTLResult:
     Result of running the BTL model on a given dataset.
     Parameters:
     -----------
-    scores: dict[int, float]
+    scores: dict[int | str, float]
         A dictionary mapping AlternativeIDs to their estimated scores.
     log_likelihood: float
         The log-likelihood of the model given the data.
@@ -311,7 +311,7 @@ class BTLResult:
     iterations: int
         The number of iterations taken by the optimization algorithm.
     """
-    scores: dict[int, float]
+    scores: dict[int | str, float]
     log_likelihood: float
     converged: bool
     iterations: int

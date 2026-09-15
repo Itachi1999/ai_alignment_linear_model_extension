@@ -333,3 +333,55 @@ class NormalizedMallowsModel(PreferenceGenerator):
 
         return tuple(ranking)
         # return super().generate(num_voters, alternatives)
+
+
+
+class SOCPreferenceGenerator(PreferenceGenerator):
+    """
+    Generates preference profiles based on the SOC file Voter mapping.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def generate(
+        self,
+        vote_map: dict[int, list[int]],
+        actual_id_uuid_map: dict[int, str]
+    ) -> tuple[Voter, ...]:
+        """
+        Generate preferences for voters based on the SOC model.
+
+        Parameters
+        ----------
+        vote_map : dict[int, list[int]]
+            Mapping of voter IDs to their preferred alternatives.
+
+        actual_id_uuid_map : dict[int, str]
+            Mapping of actual IDs to UUIDs.
+
+        Returns
+        -------
+        tuple[Voter, ...]
+            Generated voters.
+        """
+        if not vote_map:
+            raise ValueError("Vote map cannot be empty.")
+
+        voters = []
+        for ranking, count in vote_map.items():
+            if not isinstance(count, int) or count <= 0:
+                raise ValueError("Count must be a positive integer.")
+
+            for _ in range(count):
+                proper_ranking = [] 
+                for alt in ranking: 
+                    alt_id, _ = alt
+                    proper_ranking.append(alt_id)
+                voters.append(
+                    Voter(
+                        id=len(voters),
+                        ranking=tuple(proper_ranking)
+                    )
+                )
+        return tuple(voters)

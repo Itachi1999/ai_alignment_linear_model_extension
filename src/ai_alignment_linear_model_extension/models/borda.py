@@ -7,7 +7,7 @@ class Borda:
     def __init__(self, election: Election) -> None:
         self._election = election
 
-    def scores(self) -> dict[int, int]:
+    def scores(self) -> dict[int | str, int]:
         """Return Borda scores as {alternative_id: score}."""
         scores = defaultdict(int) # gets a default value of 0 for any new key
 
