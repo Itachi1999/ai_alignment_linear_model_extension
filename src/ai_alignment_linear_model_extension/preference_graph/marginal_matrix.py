@@ -73,9 +73,10 @@ class MarginalMatrix:
         """
         Return w_{a ≻ b}.
         """
+        # print(f"id:{a}")
+        # print(self._id_to_index)
         ia = self._id_to_index[a]
         ib = self._id_to_index[b]
-
         return float(self.matrix[ia, ib])
 
     def margin(self, a: int | str, b: int | str) -> float:
@@ -83,29 +84,29 @@ class MarginalMatrix:
         Return
             w_{a ≻ b} - w_{b ≻ a}.
         """
-        ia = self._id_to_index[a]
-        ib = self._id_to_index[b]
-        return self.weight(ia, ib) - self.weight(ib, ia)
+        # ia = self._id_to_index[a]
+        # ib = self._id_to_index[b]
+        return self.weight(a, b) - self.weight(b, a)
 
     def majority_prefers(self, a: int | str, b: int | str) -> bool:
         """
         True iff a is preferred to b by a strict majority.
         """
         # TODO: How to handle 0.5 != 0.5000000000000001 this case here?  SOLVED
-        ia = self._id_to_index[a]
-        ib = self._id_to_index[b]
+        # ia = self._id_to_index[a]
+        # ib = self._id_to_index[b]
         # print(f"ia: {ia}, ib: {ib}, weight(a, b): {self.weight(ia, ib)}, weight(b, a): {self.weight(ib, ia)}")
         # print(f"Majority prefers {a} over {b}: {(not np.isclose(self.weight(ia, ib), 0.5)) and (self.weight(ia, ib) > 0.5)}, weight: {self.weight(ia, ib)}")
-        return (not np.isclose(self.weight(ia, ib), 0.5)) and (self.weight(ia, ib) > 0.5)
+        return (not np.isclose(self.weight(a, b), 0.5)) and (self.weight(a, b) > 0.5)
 
     def is_tie(self, a: int | str, b: int | str) -> bool:
         """
         True iff exactly half the voters prefer each alternative.
         """
         # Is close is used to avoid floating point issues, e.g., 0.5 != 0.5000000000000001
-        ia = self._id_to_index[a]
-        ib = self._id_to_index[b]
-        return np.isclose(self.weight(ia, ib), 0.5)
+        # ia = self._id_to_index[a]
+        # ib = self._id_to_index[b]
+        return np.isclose(self.weight(a, b), 0.5)
 
     # Convenience
     def as_numpy(self) -> np.ndarray:
@@ -172,11 +173,9 @@ class MarginalMatrixBuilder:
                     ib = id_to_index[b]
 
                     if voter.prefers(a, b):
-
                         matrix[ia, ib] += 1
 
                     else:
-
                         matrix[ib, ia] += 1
 
         # Normalize

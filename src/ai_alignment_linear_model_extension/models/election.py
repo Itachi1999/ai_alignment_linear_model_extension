@@ -146,14 +146,11 @@ class Election:
         ).copy()
         # Returns a copy of the feature matrix to prevent accidental modifications to the original data.
 
-    def rankings(self) -> np.ndarray:
+    def rankings(self):
         """
         Returns an (n × m) ranking matrix.
         """
-        return np.asarray(
-            [voter.ranking for voter in self.voters],
-            dtype=int,
-        ).copy()
+        return [voter.ranking for voter in self.voters].copy()
         #Returns a copy of the ranking matrix to prevent accidental modifications to the original data.
 
     # String representation

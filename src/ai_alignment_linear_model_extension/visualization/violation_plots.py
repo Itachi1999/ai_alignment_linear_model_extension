@@ -11,7 +11,7 @@ import seaborn as sns
 from experiments.core.experiment_statistics import ExperimentResult
 from experiments.core.trial_result import TrialResult
 from ai_alignment_linear_model_extension.visualization.plot_data import PlotRecord, ParameterSweepResult
-from ai_alignment_linear_model_extension.visualization.utils import setup_plot, style_axes
+from ai_alignment_linear_model_extension.visualization.utils import setup_plot, style_axes, ParameterNameMapping
 from ai_alignment_linear_model_extension.optimization.utills import ModelType
 # from experiments.core.parameter_sweep_result import ParameterSweepResult
 
@@ -547,13 +547,10 @@ class ViolationPlots:
         )
 
     
-    def plot_mallows_summary(
+    def plot_parameter_summary(
         self,
         sweep: ParameterSweepResult,
-        *,
-        num_voters: int,
-        num_alternatives: int,
-        feature_dimension: int,
+        parameter: ParameterNameMapping,
         confidence_level: float = 0.95,
     ) -> Figure:
 
@@ -601,7 +598,7 @@ class ViolationPlots:
             )
 
             ax.set_title(title)
-            ax.set_xlabel(r"Mallows dispersion $\phi$")
+            ax.set_xlabel(parameter.label)
             ax.set_ylabel(ylabel)
 
             ax.spines["top"].set_visible(False)
@@ -629,8 +626,8 @@ class ViolationPlots:
         )
 
         ax.set_title(r"Candidate-level repair")
-        ax.set_xlabel(r"Mallows dispersion $\phi$")
-        ax.set_ylabel(r"$\|\epsilon\|_1$")
+        ax.set_xlabel(parameter.label)
+        ax.set_ylabel(r"$\|\varepsilon\|_1$")
 
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)

@@ -159,7 +159,7 @@ class PreferenceGraphBuilder:
         )
 
         alternative_ids = marginal_matrix.alternative_ids
-
+        # print(f"Alternative ids: {alternative_ids}")
         for i, a in enumerate(alternative_ids):
             for b in alternative_ids[i + 1:]:
 

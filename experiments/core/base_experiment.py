@@ -48,25 +48,19 @@ class ExperimentRunner:
         seed: int,
     ) -> ExperimentResult:
 
-        logging.info(
-            "Starting experiment: %d trials, seed=%d",
-            num_trials,
-            seed,
-        )
+        if num_trials >= 2:
+            logging.info(
+                "Starting experiment: %d trials, seed=%d",
+                num_trials,
+                seed,
+            )
         experiment.setup()
 
         trials: list[TrialResult] = []
-
-        for trial in trange(num_trials):
-            seed = seed + trial
-            logging.debug(
-                "Starting trial %d with seed %d",
-                trial,
-                seed,
-            )
+        if num_trials <= 1:
             try:
                 trial_result = experiment.run_trial(
-                    trial=trial,
+                    trial=0,
                     seed=seed,
                 )
             except Exception as e:
@@ -74,7 +68,7 @@ class ExperimentRunner:
                     "Error occurred while running trial %d: %s", trial, e
                 )
                 trial_result = TrialResult(
-                trial=trial,
+                trial=0,
                 seed=seed,
                 success=False,
                 error=str(e),
@@ -83,7 +77,35 @@ class ExperimentRunner:
                 timers=(),
             )
             trials.append(trial_result)
-        logging.info("Trials completed successfully.")  
+
+        else:
+            for trial in trange(num_trials):
+                seed = seed + trial
+                logging.debug(
+                    "Starting trial %d with seed %d",
+                    trial,
+                    seed,
+                )
+                try:
+                    trial_result = experiment.run_trial(
+                        trial=trial,
+                        seed=seed,
+                    )
+                except Exception as e:
+                    logging.exception(
+                        "Error occurred while running trial %d: %s", trial, e
+                    )
+                    trial_result = TrialResult(
+                    trial=trial,
+                    seed=seed,
+                    success=False,
+                    error=str(e),
+                    evaluation_result={},
+                    fas_size=0,
+                    timers=(),
+                )
+                trials.append(trial_result)
+            logging.info("Trials completed successfully.")  
         return experiment.summarize(trials)
 
 

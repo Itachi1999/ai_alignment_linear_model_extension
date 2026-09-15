@@ -30,7 +30,7 @@ from ai_alignment_linear_model_extension.optimization.btl_linear import BTLLinea
 from ai_alignment_linear_model_extension.evaluation.linear_model_evaluator import LinearModelEvaluator
 from ai_alignment_linear_model_extension.evaluation.BTL_model_evaluator import BTLModelEvaluator
 from ai_alignment_linear_model_extension.visualization.violation_plots import (
-    ViolationPlots, ModelType
+    ViolationPlots, ModelType, ParameterNameMapping
 )
 
 class AllModelsComparisonMallows(BaseExperiment):
@@ -429,7 +429,7 @@ def run_sweep(cfg: DictConfig) -> ParameterSweepResult:
         results[phi] = result
 
     return ParameterSweepResult(
-        parameter_name="Normalized Mallows dispersion",
+        parameter_name=ParameterNameMapping.NORM_PHI.label,
         results=results,
     )
 
@@ -457,9 +457,7 @@ def main(cfg: DictConfig) -> None:
     
     figure = plots.plot_mallows_summary(
         sweep=sweep_result,
-        num_voters=exp_cfg.data.num_voters,
-        num_alternatives=exp_cfg.data.num_alternatives,
-        feature_dimension=exp_cfg.data.dimension,
+        parameter=ParameterNameMapping.NORM_PHI,
         confidence_level=0.95,
     )
 

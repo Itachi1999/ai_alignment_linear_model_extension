@@ -3,6 +3,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.axes import Axes
+from enum import Enum, auto
 
 
 def setup_plot() -> None:
@@ -18,3 +19,22 @@ def style_axes(axis: Axes) -> None:
     axis.grid(axis="x", visible=False)
     axis.spines["top"].set_visible(False)
     axis.spines["right"].set_visible(False)
+
+
+class ParameterNameMapping(Enum):
+    NORM_PHI = auto()
+    FEATURE_DIMENSION = auto()
+    QUESTION_NUMBER = auto()
+    TRIAL = auto()
+    ALTERNATIVES = auto()
+    
+    @property
+    def label(self) -> str:
+        return {
+            ParameterNameMapping.FEATURE_DIMENSION: r"Feature Dimension ($d$)",
+            ParameterNameMapping.ALTERNATIVES: r"Number of Alternatives ($m$)",
+            ParameterNameMapping.NORM_PHI: r"Normalized Mallows Dispersion ($norm-\phi$)",
+            ParameterNameMapping.QUESTION_NUMBER: r"Question Number",
+            ParameterNameMapping.TRIAL: "Trials"
+        }[self]
+    
