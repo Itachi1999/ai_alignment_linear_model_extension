@@ -546,6 +546,187 @@ class ViolationPlots:
             figure,
         )
 
+    def plot_trial_summary(self, confidence_level: float=0.95) -> Figure:
+        result = self._require_single()
+        sns.set_theme(
+            context="paper",
+            style="whitegrid",
+            font_scale=1.05,
+        )
+
+        fig, axes = plt.subplots(
+            2,
+            2,
+            figsize=(7.2, 5.8),
+            constrained_layout=True,
+            gridspec_kw={
+                "hspace": 0.10,
+                "wspace": 0.10,
+            }
+        )
+        
+        specs = [
+            (axes[0, 0], "total", "Total violations", "Violation rate (%)"),
+            (axes[0, 1], "po", "Pareto Optimality", "Violation rate (%)"),
+            (axes[1, 0], "pmc",
+            "Pairwise Majority Consistency", "Violation rate (%)"),
+        ]
+
+        for ax, metric, title, ylabel in specs:
+        
+            df = self._create_violations_dataframe(
+                result,
+                metric,
+            )
+        
+            sns.lineplot(
+                data=df,
+                x="dispersion",
+                y="value",
+                hue="model",
+                marker="o",
+                linewidth=2.0,
+                markersize=4.5,
+                errorbar=("ci", confidence_level * 100),
+                ax=ax,
+            )
+        
+            ax.set_title(title)
+            ax.set_xlabel(ParameterNameMapping.TRIAL)
+            ax.set_ylabel(ylabel)
+        
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+        
+            legend = ax.get_legend()
+            if legend is not None:
+                legend.remove()
+
+                # epsilon panel
+        epsilon_df = self._create_epsilon_dataframe(result)
+
+        ax = axes[1, 1]
+
+        sns.lineplot(
+            data=epsilon_df,
+            x="dispersion",
+            y="value",
+            hue="model",
+            marker="o",
+            linewidth=2.0,
+            markersize=4.5,
+            errorbar=("ci", confidence_level * 100),
+            ax=ax,
+        )
+
+        ax.set_title(r"Candidate-level repair")
+        ax.set_xlabel(ParameterNameMapping.TRIAL)
+        ax.set_ylabel(r"$\|\varepsilon\|_1$")
+
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+        legend = ax.get_legend()
+        if legend is not None:
+            legend.remove()
+
+        # Shared legend
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+
+        fig.legend(
+            handles,
+            labels,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.02),
+            ncol=3,
+            frameon=False,
+        )
+
+        return fig
+
+
+
+    def _create_violations_dataframe(
+            result:ExperimentResult,
+            metric:str,
+        ):
+        rows = []
+        
+        for trial in result.trials:
+    
+            if not trial.success:
+                continue
+    
+            if trial.evaluation_result is None:
+                continue
+    
+            for model_type, evaluation in (
+                trial.evaluation_result.items()
+            ):
+    
+                if metric == "total":
+                    value = evaluation.violation_percentage
+    
+                elif metric == "po":
+                    value = evaluation.po_violation_percentage
+    
+                elif metric == "pmc":
+                    value = evaluation.pmc_violation_percentage
+    
+                else:
+                    raise ValueError(
+                        f"Unknown metric: {metric}"
+                    )
+    
+                rows.append(
+                    {
+                        "trial": trial.trial,
+                        "model": model_type.label,
+                        "value": value,
+                    }
+                )
+        
+        return pd.DataFrame(rows)
+
+
+    def _create_epsilon_dataframe(
+            result:ExperimentResult,
+        )-> pd.DataFrame:
+        rows = []
+
+        for trial in result.trials:
+
+            if not trial.success:
+                continue
+
+            if trial.evaluation_result is None:
+                continue
+
+            for model_type in (
+                ModelType.EPSILON_LP,
+                ModelType.KT_MIN_LP,
+                ModelType.WEIGHTED_KT_MIN_LP,
+                ModelType.BORDA_KT_MIN_LP,
+            ):
+                if model_type not in trial.evaluation_result:
+                    continue
+                result = trial.evaluation_result.get(model_type)
+            
+                if result is None or result.epsilon_l1_norm is None:
+                    continue
+            
+                epsilon_l1 = result.epsilon_l1_norm
+            
+                rows.append(
+                    {
+                        "trial": trial.trial,
+                        "model": model_type.label,
+                        "value": epsilon_l1,
+                    }
+                )
+
+        return pd.DataFrame(rows)
+
     
     def plot_parameter_summary(
         self,

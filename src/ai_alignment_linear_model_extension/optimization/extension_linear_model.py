@@ -3,7 +3,7 @@ from __future__ import annotations
 import cvxpy as cp
 import numpy as np
 
-from ai_alignment_linear_model_extension.models.election import Election
+from ai_alignment_linear_model_extension.models.election import Election, Alternative
 from ai_alignment_linear_model_extension.preference_graph.preference_graph import (
     PreferenceGraph, PreferenceEdgeType
 )
@@ -33,11 +33,20 @@ class LinearModelSolver:
 
     def solve(
         self,
-        election: Election,
         graph: PreferenceGraph,
+        election: Election | None,
+        alternatives: tuple[Alternative, ...] | None,
+        dimension: int | None
     ) -> LPResult:
 
-        d = election.dimension
+        if election is None and alternatives is None and dimension is None:
+            raise ValueError("At least one of Election or Alternatives (along with dimension must be given)")
+
+        if election is not None:
+            d = election.dimension
+            alternatives = election.alternatives
+        else:
+            d = dimension
 
         # --------------------------------------------------
         # Cache feature vectors
@@ -45,7 +54,7 @@ class LinearModelSolver:
 
         features = {
             alternative.id: alternative.features
-            for alternative in election.alternatives
+            for alternative in alternatives
         }
 
         # --------------------------------------------------
@@ -61,7 +70,7 @@ class LinearModelSolver:
             alternative.id: cp.Variable(
                 name=f"epsilon_{alternative.id}"
             )
-            for alternative in election.alternatives
+            for alternative in alternatives
         }
 
         t = {
@@ -69,7 +78,7 @@ class LinearModelSolver:
                 nonneg=True,
                 name=f"t_{alternative.id}"
             )
-            for alternative in election.alternatives
+            for alternative in alternatives
         }
 
         # --------------------------------------------------
@@ -81,10 +90,10 @@ class LinearModelSolver:
         # Preference graph constraints
 
         for edge in graph.edges:
-            if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
-                eta0 = self._eta
-            else:
-                eta0 = 1e-2 * self._eta 
+            # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+            #     eta0 = self._eta
+            # else:
+            #     eta0 = 1e-2 * self._eta 
             # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
             x_a = features[edge.source]
             x_b = features[edge.target]
@@ -93,12 +102,12 @@ class LinearModelSolver:
                 (theta @ (x_a - x_b))
                 + (epsilon[edge.source]
                 - epsilon[edge.target])
-                >= eta0
+                >= self._eta
             )
 
         # Absolute value constraints
 
-        for alternative in election.alternatives:
+        for alternative in alternatives:
 
             a = alternative.id
 
@@ -154,7 +163,7 @@ class LinearModelSolver:
             theta=np.asarray(theta.value).copy(),
             epsilon={
                 alternative.id: float(epsilon[alternative.id].value)
-                for alternative in election.alternatives
+                for alternative in alternatives
             },
             objective_value=float(problem.value),
             status=str(problem.status),

@@ -56,6 +56,7 @@ class Habermas100QuestionsLP(BaseExperiment):
         self._dag_list: list[PreferenceGraph] = []
         self._election_list = []
         self._marginal_matrix_list = []
+        self.alternatives = []
         # Optimization parameter is unused in the LinearModelSolver, but we keep it for consistency with other experiments.
         self._old_lp_solver = LinearModelSolver(
             eta=self._cfg.optimization.eta,
@@ -79,7 +80,8 @@ class Habermas100QuestionsLP(BaseExperiment):
 
         timers: list[TimerResult] = []
 
-        selected_json_paths_indices = rng.choice(range(len(self._json_file_path_list)), 100, replace=False).tolist()
+        selected_json_paths_indices = rng.choice(range(len(self._json_file_path_list)), self._cfg.num_elections, replace=False).tolist()
+
         
         with Timer("Creating ELections and Graphs") as timer:
             # with Timer("Election Generation") as timer:
@@ -97,18 +99,26 @@ class Habermas100QuestionsLP(BaseExperiment):
                 # with Timer("Feedback Arc Set") as timer:
                 fas_result = self._fas_solver.solve(graph)
                 # timers.append(timer.result)
+                self.alternatives += list(election.alternatives)
                 self._dag_list.append(fas_result.dag)
                 self._marginal_matrix_list.append(marginal_matrix)
                 self._election_list.append(election)
                 logging.debug(f"FAS Ordering {fas_result.ordering}")
                 logging.debug(f"Removed Edges: {fas_result.removed_edges}")
+
+            self.alternatives = tuple(self.alternatives)
+            self._dag_list = tuple(self._dag_list)
+            self._marginal_matrix_list = tuple(self._marginal_matrix_list)
+            self._election_list = tuple(self._election_list)
         timers.append(timer.result)
-        
+
+        combined_dag = self.combine_dags(self._dag_list)
         
         with Timer("LP2 Solve") as timer:
             old_lp_result = self._old_lp_solver.solve(
-                election,
-                fas_result.dag,
+                alternatives=self.alternatives,
+                dimension=self._cfg.data.dimension,
+                graph=combined_dag,
             )
         timers.append(timer.result)
         logging.debug("OLD LP:")
@@ -117,8 +127,9 @@ class Habermas100QuestionsLP(BaseExperiment):
         
         with Timer("LP3 Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
-                election,
-                fas_result.dag,
+                alternatives=self.alternatives,
+                dimension=self._cfg.data.dimension,
+                graph=combined_dag,
             )
             
         timers.append(timer.result)
@@ -163,7 +174,7 @@ class Habermas100QuestionsLP(BaseExperiment):
 
         with Timer("BTL Evaluation") as timer:
             btl_evaluation = self._btl_evaluator.evaluate(
-                fas_result.dag,
+                combined_dag,
                 btl_linear_result,
             )
         timers.append(timer.result)
@@ -181,6 +192,18 @@ class Habermas100QuestionsLP(BaseExperiment):
             fas_size=len(fas_result.removed_edges),
             timers=tuple(timers),
         )
+
+    def combine_dags(dag_list: tuple[PreferenceGraph, ...]) -> PreferenceGraph:
+        combined_graph = PreferenceGraph()
+
+        for dag in dag_list:
+            combined_graph.add_vertices(dag.vertices)
+
+        for dag in dag_list:
+            for edge in dag.edges:
+                combined_graph.add_edge(edge=edge)
+
+        return combined_graph
 
     def summarize(
         self,
@@ -347,35 +370,35 @@ class Habermas100QuestionsLP(BaseExperiment):
             statistics=statistics,
         )
 
-def run_sweep(cfg: DictConfig) -> ParameterSweepResult:
-    results: dict[float, ExperimentResult] = {}
+# def run_sweep(cfg: DictConfig) -> ParameterSweepResult:
+#     results: dict[float, ExperimentResult] = {}
 
-    runner = ExperimentRunner()
+#     runner = ExperimentRunner()
 
-    data_path = Path(cfg.data_path)
-    json_file_paths = list(data_path.glob("*.json"))
+#     data_path = Path(cfg.data_path)
+#     json_file_paths = list(data_path.glob("*.json"))
 
-    logging.info(
-        f"Starting Habermas data with {len(json_file_paths)} questions" 
-    )
-    for i in trange(len(json_file_paths), desc="Question LP Running"):
-        json_file_path = json_file_paths[i]
+#     logging.info(
+#         f"Starting Habermas data with {len(json_file_paths)} questions" 
+#     )
+#     for i in trange(len(json_file_paths), desc="Question LP Running"):
+#         json_file_path = json_file_paths[i]
         
-        experiment = HabermasAllQuestionsLP(
-            cfg=cfg,
-            path=json_file_path,
-        )
-        result = runner.run(
-            experiment=experiment,
-            num_trials=cfg.num_trials,
-            seed=cfg.seed,
-        )
-        results[i] = result
+#         experiment = Habermas100QuestionsLP(
+#             cfg=cfg,
+#             path=json_file_path,
+#         )
+#         result = runner.run(
+#             experiment=experiment,
+#             num_trials=cfg.num_trials,
+#             seed=cfg.seed,
+#         )
+#         results[i] = result
 
-    return ParameterSweepResult(
-        parameter_name=ParameterNameMapping.QUESTION_NUMBER.label,
-        results=results,
-    )
+#     return ParameterSweepResult(
+#         parameter_name=ParameterNameMapping.QUESTION_NUMBER.label,
+#         results=results,
+#     )
 
 
 @hydra.main(
@@ -389,32 +412,36 @@ def main(cfg: DictConfig) -> None:
     print(f"Running experiment: {exp_cfg.name}")
     # print(f"Configuration:\n{cfg.pretty()}")
 
+    experiment = Habermas100QuestionsLP(exp_cfg)
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
     
-    sweep_result = run_sweep(cfg=exp_cfg)
 
     logger = ExperimentLogger()
     logger.setup_logging(output_dir)
     logging.info("Starting %s", exp_cfg.name)
+
+    runner = ExperimentRunner()
+    result = runner.run(
+        experiment=experiment,
+        num_trials=exp_cfg.num_trials,
+        seed=exp_cfg.seed,
+    )
     
+    plots = ViolationPlots(result)
     
-    plots = ViolationPlots(sweep_result)
-    
-    figure = plots.plot_parameter_summary(
-        sweep=sweep_result,
-        parameter=ParameterNameMapping.QUESTION_NUMBER,
+    figure = plots.plot_trial_summary(
         confidence_level=0.95,
     )
 
     logger.save_figure(
         figure,
-        filename="habermas_all_questions_summary.pdf",
+        filename="habermas_100_questions_summary.pdf",
         output_dir=output_dir,
     )
 
     logger.save_figure(
         figure,
-        filename="habermas_all_questions_summary.png",
+        filename="habermas_100_questions_summary.png",
         output_dir=output_dir,
         dpi=600,
     )
@@ -426,7 +453,7 @@ def main(cfg: DictConfig) -> None:
     plots.clear()
 
     logger.save(
-        result=sweep_result,
+        result=result,
         config=cfg,
         output_dir=output_dir,
     )

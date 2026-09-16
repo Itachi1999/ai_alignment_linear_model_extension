@@ -189,10 +189,7 @@ class BTLPartialLinearModel:
                     raise ValueError(
                         f"Duplicate alternative ID: {alternative.id}"
                     )
-
-                self._features[alternative.id] = (
-                    alternative.features
-                )
+                self._features[alternative.id] = alternative.features
 
     @property
     def num_elections(self) -> int:
@@ -223,36 +220,21 @@ class BTLPartialLinearModel:
     ) -> float:
         ll = 0.0
 
-        for election, marginal_matrix in zip(
-            self.elections,
-            self.marginal_matrices,
-        ):
+        for election, marginal_matrix in zip(self.elections, self.marginal_matrices):
             for alt1 in marginal_matrix.alternative_ids:
                 for alt2 in marginal_matrix.alternative_ids:
 
                     if alt1 == alt2:
                         continue
 
-                    count = (
-                        marginal_matrix.weight(
-                            alt1,
-                            alt2,
-                        )
-                        * election.num_voters
-                    )
-
+                    count = marginal_matrix.weight(alt1, alt2) * election.num_voters
+                    
                     if count == 0:
                         continue
 
-                    score_difference = theta @ (
-                        self._features[alt1] -
-                        self._features[alt2]
-                    )
+                    probability = self.probability(alt1=alt1, alt2=alt2, theta=theta)
 
-                    ll += (
-                        count
-                        * log_expit(score_difference)
-                    )
+                    ll += count * np.log(probability) if probability > 0 else 0
 
         return float(ll)
 
@@ -296,8 +278,7 @@ class BTLPartialLinearModel:
             alternative_id: float(
                 self.theta @ features
             )
-            for alternative_id, features
-            in self._features.items()
+            for alternative_id, features in self._features.items()
         }
 
         return BTLResult(

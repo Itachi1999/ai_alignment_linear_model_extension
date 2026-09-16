@@ -3,7 +3,7 @@ from __future__ import annotations
 import cvxpy as cp
 import numpy as np
 
-from ai_alignment_linear_model_extension.models.election import Election
+from ai_alignment_linear_model_extension.models.election import Election, Alternative
 from ai_alignment_linear_model_extension.preference_graph.preference_graph import (
     PreferenceGraph, PreferenceEdgeType
 )
@@ -30,20 +30,29 @@ class KTMinLinearModelSolver:
 
     def solve(
         self,
-        election: Election,
         graph: PreferenceGraph,
+        election: Election | None,
+        alternatives: tuple[Alternative, ...] | None, 
+        dimension: int | None
     ) -> LPResult:
 
-        d = election.dimension
+        if election is None and alternatives is None and dimension is None:
+            raise ValueError("At least one of Election or Alternatives (along with dimension must be given)")
+        
+        if election is not None:
+            d = election.dimension
+            alternatives = election.alternatives
+        else:
+            d = dimension
 
         features = {
             alternative.id: alternative.features
-            for alternative in election.alternatives
+            for alternative in alternatives
         }
 
         features_list = [
             alternative.features
-            for alternative in election.alternatives
+            for alternative in alternatives
         ]
 
         delta = max(
@@ -62,7 +71,7 @@ class KTMinLinearModelSolver:
             alternative.id: cp.Variable(
                 name=f"epsilon_{alternative.id}"
             )
-            for alternative in election.alternatives
+            for alternative in alternatives
         }
 
         t = {
@@ -70,7 +79,7 @@ class KTMinLinearModelSolver:
                 nonneg=True,
                 name=f"t_{alternative.id}",
             )
-            for alternative in election.alternatives
+            for alternative in alternatives
         }
 
         z = {
@@ -111,7 +120,7 @@ class KTMinLinearModelSolver:
             )
 
         # |epsilon_a| <= t_a
-        for alternative in election.alternatives:
+        for alternative in alternatives:
             a = alternative.id
             constraints.append(cp.abs(epsilon[a]) <= t[a])
 
@@ -148,7 +157,7 @@ class KTMinLinearModelSolver:
             theta=np.asarray(theta.value).copy(),
             epsilon={
                 alternative.id: float(epsilon[alternative.id].value)
-                for alternative in election.alternatives
+                for alternative in alternatives
             },
             z={
                 edge_key: float(variable.value)

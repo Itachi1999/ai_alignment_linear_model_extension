@@ -6,7 +6,7 @@ import logging
 from ai_alignment_linear_model_extension.evaluation.evaluation_result import (
     EvaluationResult,
 )
-from ai_alignment_linear_model_extension.models.election import Election
+from ai_alignment_linear_model_extension.models.election import Election, Alternative
 from ai_alignment_linear_model_extension.optimization.lp_result import LPResult
 from ai_alignment_linear_model_extension.preference_graph.edge import (
     PreferenceEdgeType,
@@ -26,16 +26,25 @@ class LinearModelEvaluator:
 
     def evaluate(
         self,
-        election: Election,
         graph: PreferenceGraph,
         result: LPResult,
+        election: Election | None,
+        alternatives: tuple[Alternative, ...]
     ) -> EvaluationResult:
+
+        if election is None and alternatives is None:
+            raise ValueError("At least one of alternatives or election must be given")
+
+        if election is not None:
+            alternatives = election.alternatives
+        # else:
+        #     alternatives = alternatives
 
         features = {
             alternative.id: alternative.features
-            for alternative in election.alternatives
+            for alternative in alternatives
         }
-
+        
         violated_edges: list = []
 
         po_violations = 0
@@ -57,7 +66,7 @@ class LinearModelEvaluator:
 
         epsilon_support = tuple(
             alternative.id
-            for alternative in election.alternatives
+            for alternative in alternatives
             if abs(epsilon[alternative.id]) > 0.0
         )
 
@@ -109,8 +118,8 @@ class LinearModelEvaluator:
             epsilon_support=epsilon_support,
             num_nonzero_epsilon=len(epsilon_support),
             epsilon_support_percentage=(
-                100 * len(epsilon_support) / len(election.alternatives)
-                if election.alternatives else 0.0
+                100 * len(epsilon_support) / len(alternatives)
+                if alternatives else 0.0
             ),
             z_support_percentage = (
                 100 * len(z_support) / total
