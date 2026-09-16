@@ -145,10 +145,14 @@ class ExperimentLogger:
         result: ExperimentResult,
         output_dir: Path,
     ) -> None:
-        
+        json_result = {}
+        json_result.update({
+            model.label: asdict(stat)
+            for model, stat in result.statistics.items()
+        })
         with (output_dir / "summary.json").open("w") as file:
             json.dump(
-                result,
+                json_result,
                 file,
                 indent=4,
             )

@@ -31,9 +31,9 @@ class KTMinLinearModelSolver:
     def solve(
         self,
         graph: PreferenceGraph,
-        election: Election | None,
-        alternatives: tuple[Alternative, ...] | None, 
-        dimension: int | None
+        election: Election | None = None,
+        alternatives: tuple[Alternative, ...] | None = None, 
+        dimension: int | None = None
     ) -> LPResult:
 
         if election is None and alternatives is None and dimension is None:

@@ -28,8 +28,8 @@ class LinearModelEvaluator:
         self,
         graph: PreferenceGraph,
         result: LPResult,
-        election: Election | None,
-        alternatives: tuple[Alternative, ...]
+        election: Election | None = None,
+        alternatives: tuple[Alternative, ...] | None = None
     ) -> EvaluationResult:
 
         if election is None and alternatives is None:

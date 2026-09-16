@@ -83,7 +83,7 @@ class RealElectionGenerator(ElectionGenerator):
     ) -> None:
         self._d = d
 
-    def generate(self, json_path: Path) -> Election:
+    def generate(self, json_path: Path, is_pca: bool= True) -> Election:
         self._json_path = json_path
         with self._json_path.open("r", encoding="utf-8") as file:
             data = json.load(file)
@@ -104,16 +104,26 @@ class RealElectionGenerator(ElectionGenerator):
                 f"(m={X.shape[0]}, original dimension={X.shape[1]})."
             )
 
-        X_reduced = PCA(n_components=self._d).fit_transform(X)
+        if is_pca:
+            X_reduced = PCA(n_components=self._d).fit_transform(X)
 
-        alternatives = tuple(
-            Alternative(
-                id=alternative_id,
-                dimension=self._d,
-                features=X_reduced[i],
+            alternatives = tuple(
+                Alternative(
+                    id=alternative_id,
+                    dimension=self._d,
+                    features=X_reduced[i],
+                )
+                for i, alternative_id in enumerate(alternative_ids)
             )
-            for i, alternative_id in enumerate(alternative_ids)
-        )
+        else:
+            alternatives = tuple(
+                Alternative(
+                    id=alternative_id,
+                    dimension=self._d,
+                    features=alternative_vectors[alternative_id][:self._d],
+                )
+                for i, alternative_id in enumerate(alternative_ids)
+            )
 
         voters = tuple(
             Voter(

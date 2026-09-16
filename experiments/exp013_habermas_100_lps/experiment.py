@@ -53,10 +53,6 @@ class Habermas100QuestionsLP(BaseExperiment):
         self._graph_builder = PreferenceGraphBuilder()
         self._fas_solver = FeedbackArcSetSolver()
         
-        self._dag_list: list[PreferenceGraph] = []
-        self._election_list = []
-        self._marginal_matrix_list = []
-        self.alternatives = []
         # Optimization parameter is unused in the LinearModelSolver, but we keep it for consistency with other experiments.
         self._old_lp_solver = LinearModelSolver(
             eta=self._cfg.optimization.eta,
@@ -82,12 +78,17 @@ class Habermas100QuestionsLP(BaseExperiment):
 
         selected_json_paths_indices = rng.choice(range(len(self._json_file_path_list)), self._cfg.num_elections, replace=False).tolist()
 
+        self._dag_list: list[PreferenceGraph] = []
+        self._election_list = []
+        self._marginal_matrix_list = []
+        self.alternatives = ()
+
         
         with Timer("Creating ELections and Graphs") as timer:
             # with Timer("Election Generation") as timer:
             for i in selected_json_paths_indices:
                 json_path = self._json_file_path_list[i]
-                election = self._data_generator.generate(json_path=json_path)
+                election = self._data_generator.generate(json_path=json_path, is_pca=False)
                 # timers.append(timer.result)
                 logging.debug(f"election preference profile: {election.rankings}")
 
@@ -99,7 +100,7 @@ class Habermas100QuestionsLP(BaseExperiment):
                 # with Timer("Feedback Arc Set") as timer:
                 fas_result = self._fas_solver.solve(graph)
                 # timers.append(timer.result)
-                self.alternatives += list(election.alternatives)
+                self.alternatives += election.alternatives
                 self._dag_list.append(fas_result.dag)
                 self._marginal_matrix_list.append(marginal_matrix)
                 self._election_list.append(election)
@@ -158,17 +159,17 @@ class Habermas100QuestionsLP(BaseExperiment):
 
         with Timer("Old LP Evaluation") as timer:
             old_evaluation = self._evaluator.evaluate(
-                election,
-                fas_result.dag,
-                old_lp_result,
+                alternatives=self.alternatives,
+                graph=fas_result.dag,
+                result=old_lp_result,
             )
         timers.append(timer.result)
         
         with Timer("New LP Evaluation") as timer:
             new_evaluation = self._evaluator.evaluate(
-                election,
-                fas_result.dag,
-                new_lp_result,
+                alternatives=self.alternatives,
+                graph=fas_result.dag,
+                result=new_lp_result,
             )
         timers.append(timer.result)
 
@@ -193,7 +194,7 @@ class Habermas100QuestionsLP(BaseExperiment):
             timers=tuple(timers),
         )
 
-    def combine_dags(dag_list: tuple[PreferenceGraph, ...]) -> PreferenceGraph:
+    def combine_dags(self, dag_list: tuple[PreferenceGraph, ...]) -> PreferenceGraph:
         combined_graph = PreferenceGraph()
 
         for dag in dag_list:

@@ -581,7 +581,7 @@ class ViolationPlots:
         
             sns.lineplot(
                 data=df,
-                x="dispersion",
+                x="trial",
                 y="value",
                 hue="model",
                 marker="o",
@@ -592,7 +592,7 @@ class ViolationPlots:
             )
         
             ax.set_title(title)
-            ax.set_xlabel(ParameterNameMapping.TRIAL)
+            ax.set_xlabel(ParameterNameMapping.TRIAL.label)
             ax.set_ylabel(ylabel)
         
             ax.spines["top"].set_visible(False)
@@ -609,7 +609,7 @@ class ViolationPlots:
 
         sns.lineplot(
             data=epsilon_df,
-            x="dispersion",
+            x="trial",
             y="value",
             hue="model",
             marker="o",
@@ -620,7 +620,7 @@ class ViolationPlots:
         )
 
         ax.set_title(r"Candidate-level repair")
-        ax.set_xlabel(ParameterNameMapping.TRIAL)
+        ax.set_xlabel(ParameterNameMapping.TRIAL.label)
         ax.set_ylabel(r"$\|\varepsilon\|_1$")
 
         ax.spines["top"].set_visible(False)
@@ -647,6 +647,7 @@ class ViolationPlots:
 
 
     def _create_violations_dataframe(
+            self,
             result:ExperimentResult,
             metric:str,
         ):
@@ -690,6 +691,7 @@ class ViolationPlots:
 
 
     def _create_epsilon_dataframe(
+            self,
             result:ExperimentResult,
         )-> pd.DataFrame:
         rows = []
