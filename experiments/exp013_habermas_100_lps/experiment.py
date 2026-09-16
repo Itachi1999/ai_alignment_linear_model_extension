@@ -23,11 +23,11 @@ from experiments.core.timer import Timer, TimerResult
 # Main Module Imports
 
 from ai_alignment_linear_model_extension.generators.election_generator import  RealElectionGenerator
-from ai_alignment_linear_model_extension.preference_graph.preference_graph import PreferenceGraphBuilder, PreferenceEdgeType
+from ai_alignment_linear_model_extension.preference_graph.preference_graph import PreferenceGraphBuilder, PreferenceEdgeType, PreferenceGraph
 from ai_alignment_linear_model_extension.preference_graph.FAS import FeedbackArcSetSolver
 from ai_alignment_linear_model_extension.optimization.extension_linear_model import LinearModelSolver
 from ai_alignment_linear_model_extension.optimization.linear_KT_min_model import KTMinLinearModelSolver
-from ai_alignment_linear_model_extension.optimization.btl_linear import BTLLinearModel
+from ai_alignment_linear_model_extension.optimization.btl_linear import BTLPartialLinearModel
 from ai_alignment_linear_model_extension.evaluation.linear_model_evaluator import LinearModelEvaluator
 from ai_alignment_linear_model_extension.evaluation.BTL_model_evaluator import BTLModelEvaluator
 from ai_alignment_linear_model_extension.visualization.violation_plots import (
@@ -35,23 +35,27 @@ from ai_alignment_linear_model_extension.visualization.violation_plots import (
 )
 
 
-class HabermasAllQuestionsLP(BaseExperiment):
+class Habermas100QuestionsLP(BaseExperiment):
     """ 
     This class implements a synthetic experiment to test the expressibility of LP generated theta against the LP generated theta and epsilon.
     """
-    def __init__(self, cfg, path: Path):
+    def __init__(self, cfg):
         self._cfg = cfg
         self._rng = np.random.default_rng(cfg.seed)
-        self._path = path
 
     def setup(self) -> None:
         # self._theta_0 = np.random.normal(loc=self._cfg.data.mean, scale=self._cfg.data.std, size=self._cfg.data.dimension)
+        self._json_file_path_list = list(Path(self._cfg.data_path).glob("*.json"))
         
         self._data_generator = RealElectionGenerator(
-            json_path=self._path, d = self._cfg.data.dimension
+            d = self._cfg.data.dimension
         )
         self._graph_builder = PreferenceGraphBuilder()
         self._fas_solver = FeedbackArcSetSolver()
+        
+        self._dag_list: list[PreferenceGraph] = []
+        self._election_list = []
+        self._marginal_matrix_list = []
         # Optimization parameter is unused in the LinearModelSolver, but we keep it for consistency with other experiments.
         self._old_lp_solver = LinearModelSolver(
             eta=self._cfg.optimization.eta,
@@ -75,22 +79,32 @@ class HabermasAllQuestionsLP(BaseExperiment):
 
         timers: list[TimerResult] = []
 
-        with Timer("Election Generation") as timer:
-            election = self._data_generator.generate()
-        timers.append(timer.result)
-        logging.debug(f"election preference profile: {election.rankings}")
+        selected_json_paths_indices = rng.choice(range(len(self._json_file_path_list)), 100, replace=False).tolist()
+        
+        with Timer("Creating ELections and Graphs") as timer:
+            # with Timer("Election Generation") as timer:
+            for i in selected_json_paths_indices:
+                json_path = self._json_file_path_list[i]
+                election = self._data_generator.generate(json_path=json_path)
+                # timers.append(timer.result)
+                logging.debug(f"election preference profile: {election.rankings}")
 
-        with Timer("Graph Construction") as timer:
-            marginal_matrix, graph = self._graph_builder.build(election)
+                # with Timer("Graph Construction") as timer:
+                marginal_matrix, graph = self._graph_builder.build(election)
+                # timers.append(timer.result)
+                logging.debug(f"Marginal Matrix: {marginal_matrix}")
+                logging.debug(f"preference graph: {graph}")
+                # with Timer("Feedback Arc Set") as timer:
+                fas_result = self._fas_solver.solve(graph)
+                # timers.append(timer.result)
+                self._dag_list.append(fas_result.dag)
+                self._marginal_matrix_list.append(marginal_matrix)
+                self._election_list.append(election)
+                logging.debug(f"FAS Ordering {fas_result.ordering}")
+                logging.debug(f"Removed Edges: {fas_result.removed_edges}")
         timers.append(timer.result)
-        logging.debug(f"Marginal Matrix: {marginal_matrix}")
-        logging.debug(f"preference graph: {graph}")
-        with Timer("Feedback Arc Set") as timer:
-            fas_result = self._fas_solver.solve(graph)
-        timers.append(timer.result)
-        logging.debug(f"FAS Ordering {fas_result.ordering}")
-        logging.debug(f"Removed Edges: {fas_result.removed_edges}")
-
+        
+        
         with Timer("LP2 Solve") as timer:
             old_lp_result = self._old_lp_solver.solve(
                 election,
@@ -115,9 +129,9 @@ class HabermasAllQuestionsLP(BaseExperiment):
         logging.debug(f"Objetive Value: {new_lp_result.objective_value}")
         
         with Timer("BTL Model Fitting") as timer:
-            blt_model = BTLLinearModel(
-                election=election,
-                marginal_matrix=marginal_matrix,
+            blt_model = BTLPartialLinearModel(
+                elections=self._election_list,
+                marginal_matrices=self._marginal_matrix_list
             )
             btl_linear_result = blt_model.fit(max_iter=self._cfg.optimization.max_iterations)
         timers.append(timer.result)

@@ -79,13 +79,12 @@ class ElectionGenerator:
 class RealElectionGenerator(ElectionGenerator):
     def __init__(
         self,
-        json_path: Path,
         d: int,
     ) -> None:
-        self._json_path = json_path
         self._d = d
 
-    def generate(self) -> Election:
+    def generate(self, json_path: Path) -> Election:
+        self._json_path = json_path
         with self._json_path.open("r", encoding="utf-8") as file:
             data = json.load(file)
 

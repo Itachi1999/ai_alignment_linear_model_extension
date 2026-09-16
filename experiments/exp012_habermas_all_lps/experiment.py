@@ -48,7 +48,7 @@ class HabermasAllQuestionsLP(BaseExperiment):
         # self._theta_0 = np.random.normal(loc=self._cfg.data.mean, scale=self._cfg.data.std, size=self._cfg.data.dimension)
         
         self._data_generator = RealElectionGenerator(
-            json_path=self._path, d = self._cfg.data.dimension
+            d = self._cfg.data.dimension
         )
         self._graph_builder = PreferenceGraphBuilder()
         self._fas_solver = FeedbackArcSetSolver()
@@ -76,7 +76,7 @@ class HabermasAllQuestionsLP(BaseExperiment):
         timers: list[TimerResult] = []
 
         with Timer("Election Generation") as timer:
-            election = self._data_generator.generate()
+            election = self._data_generator.generate(json_path=self._path)
         timers.append(timer.result)
         logging.debug(f"election preference profile: {election.rankings}")
 
