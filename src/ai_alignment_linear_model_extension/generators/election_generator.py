@@ -120,7 +120,7 @@ class RealElectionGenerator(ElectionGenerator):
                 Alternative(
                     id=alternative_id,
                     dimension=self._d,
-                    features=alternative_vectors[alternative_id][:self._d],
+                    features=alternative_vectors[alternative_id],
                 )
                 for i, alternative_id in enumerate(alternative_ids)
             )

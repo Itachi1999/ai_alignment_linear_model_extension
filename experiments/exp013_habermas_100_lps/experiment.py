@@ -160,7 +160,7 @@ class Habermas100QuestionsLP(BaseExperiment):
         with Timer("Old LP Evaluation") as timer:
             old_evaluation = self._evaluator.evaluate(
                 alternatives=self.alternatives,
-                graph=fas_result.dag,
+                graph=combined_dag,
                 result=old_lp_result,
             )
         timers.append(timer.result)
@@ -168,7 +168,7 @@ class Habermas100QuestionsLP(BaseExperiment):
         with Timer("New LP Evaluation") as timer:
             new_evaluation = self._evaluator.evaluate(
                 alternatives=self.alternatives,
-                graph=fas_result.dag,
+                graph=combined_dag,
                 result=new_lp_result,
             )
         timers.append(timer.result)
