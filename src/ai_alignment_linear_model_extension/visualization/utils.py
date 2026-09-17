@@ -22,6 +22,7 @@ def style_axes(axis: Axes) -> None:
 
 
 class ParameterNameMapping(Enum):
+    LAMBDA_LP3 = auto()
     NORM_PHI = auto()
     FEATURE_DIMENSION = auto()
     QUESTION_NUMBER = auto()
@@ -31,6 +32,7 @@ class ParameterNameMapping(Enum):
     @property
     def label(self) -> str:
         return {
+            ParameterNameMapping.LAMBDA_LP3: r"Lambda ($\lambda$)",
             ParameterNameMapping.FEATURE_DIMENSION: r"Feature Dimension ($d$)",
             ParameterNameMapping.ALTERNATIVES: r"Number of Alternatives ($m$)",
             ParameterNameMapping.NORM_PHI: r"Normalized Mallows Dispersion ($norm-\phi$)",

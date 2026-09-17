@@ -889,41 +889,66 @@ class ViolationPlots:
         rows = []
 
         for phi, experiment_result in sweep.results.items():
-
-            for trial in experiment_result.trials:
-
-                if not trial.success:
-                    continue
-
-                if trial.evaluation_result is None:
-                    continue
-
-                for model_type, evaluation in (
-                    trial.evaluation_result.items()
-                ):
-
-                    if metric == "total":
-                        value = evaluation.violation_percentage
-
-                    elif metric == "po":
-                        value = evaluation.po_violation_percentage
-
-                    elif metric == "pmc":
-                        value = evaluation.pmc_violation_percentage
-
-                    else:
-                        raise ValueError(
-                            f"Unknown metric: {metric}"
-                        )
-
-                    rows.append(
-                        {
-                            "dispersion": phi,
-                            "trial": trial.trial,
-                            "model": model_type.label,
-                            "value": value,
-                        }
+            stat = experiment_result.statistics
+            for model_type, model_stat in (
+                stat.items()
+            ):
+        
+                if metric == "total":
+                    value = model_stat.mean_violation_percentage
+        
+                elif metric == "po":
+                    value = model_stat.mean_po_violation_percentage
+        
+                elif metric == "pmc":
+                    value = model_stat.mean_pmc_violation_percentage
+        
+                else:
+                    raise ValueError(
+                        f"Unknown metric: {metric}"
                     )
+        
+                rows.append(
+                    {
+                        "dispersion": phi,
+                        "model": model_type.label,
+                        "value": value,
+                    }
+                )
+            # for trial in experiment_result.trials:
+
+            #     if not trial.success:
+            #         continue
+
+            #     if trial.evaluation_result is None:
+            #         continue
+
+            #     for model_type, evaluation in (
+            #         trial.evaluation_result.items()
+            #     ):
+
+            #         if metric == "total":
+            #             value = evaluation.violation_percentage
+
+            #         elif metric == "po":
+            #             value = evaluation.po_violation_percentage
+
+            #         elif metric == "pmc":
+            #             value = evaluation.pmc_violation_percentage
+
+            #         else:
+            #             raise ValueError(
+            #                 f"Unknown metric: {metric}"
+            #             )
+
+            #         rows.append(
+            #             {
+            #                 "dispersion": phi,
+            #                 "trial": trial.trial,
+            #                 "model": model_type.label,
+            #                 "value": value,
+            #             }
+            #         )
 
         return pd.DataFrame(rows)
 
