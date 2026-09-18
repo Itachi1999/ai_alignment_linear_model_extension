@@ -1,7 +1,5 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from curses.ascii import alt
-from pyexpat import features
 import numpy as np
 
 from ai_alignment_linear_model_extension.models.alternative import Alternative

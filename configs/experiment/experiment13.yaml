@@ -5,12 +5,12 @@ num_trials: 10
 seed: 42
 
 data:
-  dimension: 300
+  dimension: 500
   mean: 0.0
   std: 1.0
 
 num_elections: 500
-data_path: "data/processed/00070_habermas_pca_300/"
+data_path: "data/processed/00070_habermas_pca_500/"
 
 optimization:
   eta: 1e-5

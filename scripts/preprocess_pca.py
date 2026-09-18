@@ -80,7 +80,8 @@ def main():
 
     input_dir: Path = Path("data/processed/00070_habermas/")
     output_root: str = "data/processed/"
-    dimensions: tuple[int, ...] = (150, 200, 250, 300)
+    dimensions: tuple[int, ...] = (500,)
+    # (25, 50, 75, 100, 150, 200, 250, 300)
 
     for dimension in dimensions:
         

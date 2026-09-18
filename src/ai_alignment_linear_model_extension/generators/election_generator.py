@@ -5,12 +5,8 @@ from pathlib import Path
 import numpy as np
 from sklearn.decomposition import PCA
 
-from ai_alignment_linear_model_extension.generators.feature_generator import (
-    FeatureGenerator,
-)
-from ai_alignment_linear_model_extension.generators.preference_generator import (
-    PreferenceGenerator,
-)
+from ai_alignment_linear_model_extension.generators.feature_generator import FeatureGenerator
+from ai_alignment_linear_model_extension.generators.preference_generator import PreferenceGenerator
 from ai_alignment_linear_model_extension.models.election import Election, Alternative, Voter
 
 
