@@ -1,0 +1,25 @@
+experiment:
+  name: exp013_habermas_100_lps
+  summary: Synthetic experiment with Gaussian candidate data and Normalized Mallows
+    model preference generator. Here, we check the PO and PMC violations of the old
+    epsilon LP and the new KT min LP model and the BTL linear model and also the weighted
+    KT min LP model and the Borda KT min LP model.
+  num_trials: 10
+  seed: 42
+  data:
+    dimension: 768
+    mean: 0.0
+    std: 1.0
+  num_elections: 500
+  data_path: data/processed/00070_habermas/
+  optimization:
+    eta: 1.0e-05
+    lambda_: 10
+    solver: HIGHS
+    max_iterations: 100
+    tolerance: 1.0e-06
+  logging:
+    save_summary: true
+    save_trials: true
+    save_figures: true
+    save_tables: true
