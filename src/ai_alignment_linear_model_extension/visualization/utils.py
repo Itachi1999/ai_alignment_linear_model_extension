@@ -35,7 +35,7 @@ class ParameterNameMapping(Enum):
             ParameterNameMapping.LAMBDA_LP3: r"Lambda ($\lambda$)",
             ParameterNameMapping.FEATURE_DIMENSION: r"Feature Dimension ($d$)",
             ParameterNameMapping.ALTERNATIVES: r"Number of Alternatives ($m$)",
-            ParameterNameMapping.NORM_PHI: r"Normalized Mallows Dispersion ($norm-\phi$)",
+            ParameterNameMapping.NORM_PHI: r"Dispersion ($\phi$)",
             ParameterNameMapping.QUESTION_NUMBER: r"Question Number",
             ParameterNameMapping.TRIAL: "Trials"
         }[self]

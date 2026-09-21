@@ -744,10 +744,11 @@ class ViolationPlots:
         )
 
         fig, axes = plt.subplots(
-            2,
-            2,
-            figsize=(7.2, 5.8),
+            1,
+            4,
+            figsize=(12, 3),
             constrained_layout=True,
+            sharex= True,
             gridspec_kw={
                 "hspace": 0.10,
                 "wspace": 0.10,
@@ -755,12 +756,12 @@ class ViolationPlots:
         )
 
         specs = [
-            (axes[0, 0], "total", "Total violations", "Violation rate (%)"),
-            (axes[0, 1], "po", "Pareto Optimality", "Violation rate (%)"),
-            (axes[1, 0], "pmc",
-            "Pairwise Majority Consistency", "Violation rate (%)"),
+            (axes[0], "total", "TVR", "Violation rate (%)"),
+            (axes[1], "po", "TUV", "Violation rate (%)"),
+            (axes[2], "pmc",
+            "TMV", "Violation rate (%)"),
         ]
-
+        sns.set_palette("colorblind")
         for ax, metric, title, ylabel in specs:
 
             df = self._sweep_dataframe(
@@ -773,7 +774,9 @@ class ViolationPlots:
                 x="dispersion",
                 y="value",
                 hue="model",
+                style="model",
                 marker="o",
+                palette="deep",
                 linewidth=2.0,
                 markersize=4.5,
                 errorbar=("ci", confidence_level * 100),
@@ -794,21 +797,23 @@ class ViolationPlots:
         # epsilon panel
         epsilon_df = self._epsilon_dataframe(sweep)
 
-        ax = axes[1, 1]
+        ax = axes[3]
 
         sns.lineplot(
             data=epsilon_df,
             x="dispersion",
             y="value",
             hue="model",
+            style="model",
             marker="o",
+            palette="deep",
             linewidth=2.0,
             markersize=4.5,
             errorbar=("ci", confidence_level * 100),
             ax=ax,
         )
 
-        ax.set_title(r"Candidate-level repair")
+        ax.set_title(r"Candidate-level slack")
         ax.set_xlabel(parameter.label)
         ax.set_ylabel(r"$\|\varepsilon\|_1$")
 
@@ -820,7 +825,7 @@ class ViolationPlots:
             legend.remove()
 
         # Shared legend
-        handles, labels = axes[0, 0].get_legend_handles_labels()
+        handles, labels = axes[0].get_legend_handles_labels()
 
         fig.legend(
             handles,

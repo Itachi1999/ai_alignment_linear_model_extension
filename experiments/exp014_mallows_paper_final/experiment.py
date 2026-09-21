@@ -103,15 +103,15 @@ class AllModelsComparisonMallows(BaseExperiment):
         logging.debug(f"FAS Ordering {fas_result.ordering}")
         logging.debug(f"Removed Edges: {fas_result.removed_edges}")
 
-        # with Timer("LP2 Solve") as timer:
-        #     old_lp_result = self._old_lp_solver.solve(
-        #         election,
-        #         fas_result.dag,
-        #     )
-        # timers.append(timer.result)
-        # logging.debug("OLD LP:")
-        # logging.debug(f"Epsilon: {old_lp_result.epsilon}")
-        # logging.debug(f"Epsilon Norm: {old_lp_result.objective_value}")
+        with Timer("LP2 Solve") as timer:
+            old_lp_result = self._old_lp_solver.solve(
+                election=election,
+                graph=fas_result.dag,
+            )
+        timers.append(timer.result)
+        logging.debug("OLD LP:")
+        logging.debug(f"Epsilon: {old_lp_result.epsilon}")
+        logging.debug(f"Epsilon Norm: {old_lp_result.objective_value}")
         
         with Timer("LP3 Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
@@ -143,13 +143,13 @@ class AllModelsComparisonMallows(BaseExperiment):
         #     btl_hinge_result = blt_hinge_model.fit(max_iter=self._cfg.optimization.max_iterations)
         # timers.append(timer.result)
 
-        # with Timer("Old LP Evaluation") as timer:
-        #     old_evaluation = self._evaluator.evaluate(
-        #         election,
-        #         fas_result.dag,
-        #         old_lp_result,
-        #     )
-        # timers.append(timer.result)
+        with Timer("Old LP Evaluation") as timer:
+            old_evaluation = self._evaluator.evaluate(
+                election=election,
+                graph=fas_result.dag,
+                result=old_lp_result,
+            )
+        timers.append(timer.result)
         
         with Timer("New LP Evaluation") as timer:
             new_evaluation = self._evaluator.evaluate(
@@ -204,9 +204,9 @@ class AllModelsComparisonMallows(BaseExperiment):
             seed=seed,
             # lp_result=lp_result,
             evaluation_result={
+                ModelType.EPSILON_LP: old_evaluation,
                 ModelType.KT_MIN_LP: new_evaluation,
                 ModelType.BTL_LINEAR: btl_evaluation,
-
             },
             fas_size=len(fas_result.removed_edges),
             timers=tuple(timers),
@@ -262,7 +262,7 @@ class AllModelsComparisonMallows(BaseExperiment):
         trials: list[TrialResult],
     ) -> ExperimentResult:
         statistics:dict[ModelType, ExperimentStatistics] = {}
-        for model in [ModelType.KT_MIN_LP, ModelType.BTL_LINEAR]:
+        for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP, ModelType.BTL_LINEAR]:
             objectives = [
                 trial.evaluation_result[model].objective_value 
                 for trial in trials

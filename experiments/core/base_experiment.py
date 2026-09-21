@@ -175,6 +175,10 @@ class ExperimentLogger:
                     "objective": evaluation.objective_value,
                     "loss_value": evaluation.loss_value,
                     "fas_size": trial.fas_size,
+                    
+                    "violation_percentage": evaluation.violation_percentage,
+                    "po_violation_percentage": evaluation.po_violation_percentage,
+                    "pmc_violation_percentage": evaluation.pmc_violation_percentage,
 
                     "num_violations": evaluation.num_violations,
                     "num_po_violations": evaluation.num_po_violations,
@@ -236,6 +240,9 @@ class ExperimentLogger:
                         "objective": evaluation.objective_value,
                         "loss_value": evaluation.loss_value,
                         "fas_size": trial.fas_size,
+                        "violation_percentage": evaluation.violation_percentage,
+                        "po_violation_percentage": evaluation.po_violation_percentage,
+                        "pmc_violation_percentage": evaluation.pmc_violation_percentage,
                         "num_violations": evaluation.num_violations,
                         "num_po_violations": evaluation.num_po_violations,
                         "num_pmc_violations": evaluation.num_pmc_violations,
