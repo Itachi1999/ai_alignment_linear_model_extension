@@ -6,7 +6,7 @@ import seaborn as sns
 
 
 def main():
-    path = "paper_results/mallows_dispersion/20260913_220820 copy/trials.csv"
+    path = "paper_results/mallows_dispersion/20260922_001832/trials.csv"
     CSV_PATH = Path(path)
     OUTPUT_PATH = Path("paper/figures/mallows_dispersion")
     if Path(OUTPUT_PATH).exists() is False:
@@ -25,27 +25,10 @@ def main():
             tuple(SELECTED_MODELS)
         )
     ].copy()
-
     if df.empty:
         raise ValueError(
             f"No data found for selected models: {SELECTED_MODELS}"
         )
-
-    df["model"] = (
-        df["model"]
-        .mask(
-            df["model"].str.startswith("LP2"),
-            r"$\mathsf{LP2}$",
-        )
-        .mask(
-            df["model"].str.startswith("LP3"),
-            r"$\mathsf{LP3}$",
-        )
-        .mask(
-            df["model"].str.startswith("Linear"),
-            r"$\mathsf{BTL-L}$",
-        )
-    )
 
     # Optional: verify the resulting models
     print(df["model"].unique(), "unique models")
@@ -53,7 +36,8 @@ def main():
     sns.set_theme(
         context="paper",
         style="whitegrid",
-        font_scale=1.0,
+        font_scale=3.0,
+        
     )
 
     palette = sns.color_palette(
@@ -64,15 +48,19 @@ def main():
     fig, axes = plt.subplots(
         1,
         4,
-        figsize=(12.0, 3.0),
+        figsize=(16.0, 4.0),
         sharex=True,
+        # gridspec_kw={
+        #     "hspace": 0.10,
+        #     "wspace": 0.10,
+        # }
     )
 
     plots = [
-        ("num_violations", "TVR", "Violation rate (%)"),
-        ("num_po_violations", "PUV", "Violation rate (%)"),
-        ("num_pmc_violations", "PMV", "Violation rate (%)"),
-        ("epsilon_l1_norm", r"Candidate-level slack", r"$\|\varepsilon\|_1$"),
+        ("violation_percentage", "Total Violations", "Violation rate (%)"),
+        ("po_violation_percentage", "PO Violations", "Violation rate (%)"),
+        ("pmc_violation_percentage", "Majority Violations", "Violation rate (%)"),
+        ("epsilon_l1_norm", "Candidate-wise slack", r"$\|\varepsilon\|_1$"),
     ]
 
     for ax, (column, title, ylabel) in zip(axes, plots):
@@ -87,35 +75,34 @@ def main():
             x="phi",
             y=column,
             hue="model",
-            hue_order=SELECTED_MODELS,
             style="model",
             palette=palette,
             marker="o",
             markersize=4,
-            linewidth=2.0,
+            linewidth=2.5,
             errorbar=("ci", 95),
             ax=ax,
-            legend=False,
+            # legend=False,
         )
-
+        ax.yaxis.get_offset_text().set_fontsize(12)
         ax.set_title(
             title,
-            fontsize=11,
+            fontsize=18,
             pad=6,
         )
 
         ax.set_xlabel(
             r"Mallows dispersion $\phi$",
-            fontsize=9.5,
+            fontsize=16,
         )
 
         ax.set_ylabel(
             ylabel,
-            fontsize=9.5,
+            fontsize=16,
         )
 
         ax.tick_params(
-            labelsize=8.5,
+            labelsize=10.5,
         )
 
         # ax.set_xticks(
@@ -133,17 +120,20 @@ def main():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)   
 
+        legend = ax.get_legend()
+        if legend is not None:
+            legend.remove()
 
     handles, labels = axes[0].get_legend_handles_labels()
 
     fig.legend(
         handles,
         labels,
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.04),
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.01),
         ncol=len(SELECTED_MODELS),
         frameon=False,
-        fontsize=9.5,
+        fontsize=16,
         handlelength=2.5,
         columnspacing=1.8,
     )
@@ -157,8 +147,9 @@ def main():
     )
 
     fig.savefig(
-        OUTPUT_PATH / "mallows_selected.pdf",
+        OUTPUT_PATH / "mallows_dispersion_summary_3_6_5.pdf",
         bbox_inches="tight",
+        dpi=1200
     )
 
     fig.savefig(
