@@ -61,6 +61,11 @@ class LinearModelEvaluator:
                 for edge_key, z_val in z.items()
                 if z_val > self._tolerance
             )
+        
+        
+        z_sum = None
+        if z is not None:
+            z_sum = sum(z_val for z_val in z.values())
             
         epsilon_l1_norm = sum(abs(epsilon_val) for epsilon_val in epsilon.values())
 
@@ -125,6 +130,7 @@ class LinearModelEvaluator:
                 100 * len(z_support) / total
                 if z_support else 0.0
             ),
+            z_sum=z_sum,
             violation_percentage=100 * total_violations / total if total else 0.0,
             po_violation_percentage=100 * po_violations / graph.num_po_edges if graph.num_po_edges else 0.0,
             pmc_violation_percentage=100 * pmc_violations / graph.num_pmc_edges if graph.num_pmc_edges else 0.0,

@@ -184,6 +184,7 @@ class ExperimentLogger:
                     "num_po_violations": evaluation.num_po_violations,
                     "num_pmc_violations": evaluation.num_pmc_violations,
 
+                    "z_sum": evaluation.z_sum,
                     "epsilon_l1_norm": evaluation.epsilon_l1_norm,
                     "epsilon_support_percentage": evaluation.epsilon_support_percentage,
                     "epsilon_sparsity": evaluation.epsilon_sparsity,
@@ -246,6 +247,7 @@ class ExperimentLogger:
                         "num_violations": evaluation.num_violations,
                         "num_po_violations": evaluation.num_po_violations,
                         "num_pmc_violations": evaluation.num_pmc_violations,
+                        "z_sum": evaluation.z_sum,
                         "epsilon_l1_norm": evaluation.epsilon_l1_norm,
                         "epsilon_support_percentage": (
                             evaluation.epsilon_support_percentage

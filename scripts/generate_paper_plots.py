@@ -3,10 +3,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from ai_alignment_linear_model_extension.visualization.utils import ParameterNameMapping
 
 
 def main():
-    path = "paper_results/mallows_dispersion/20260922_001832/trials.csv"
+    path = r"paper_results\mallows_dispersion\20260922_002854\trials.csv"
     CSV_PATH = Path(path)
     OUTPUT_PATH = Path("paper/figures/mallows_dispersion")
     if Path(OUTPUT_PATH).exists() is False:
@@ -15,7 +16,7 @@ def main():
     SELECTED_MODELS = [
         "LP2",
         "LP3",
-        "Linear",
+        "Linear"
     ]
 
     df = pd.read_csv(CSV_PATH)
@@ -57,6 +58,7 @@ def main():
     )
 
     plots = [
+        # ("z_sum", r"Inversion Parameter ($u$)", r"$\sum_{(a,b)\in P}u_{ab}$"),
         ("violation_percentage", "Total Violations", "Violation rate (%)"),
         ("po_violation_percentage", "PO Violations", "Violation rate (%)"),
         ("pmc_violation_percentage", "Majority Violations", "Violation rate (%)"),
@@ -92,7 +94,7 @@ def main():
         )
 
         ax.set_xlabel(
-            r"Mallows dispersion $\phi$",
+            ParameterNameMapping.NORM_PHI.label,
             fontsize=16,
         )
 
@@ -130,7 +132,7 @@ def main():
         handles,
         labels,
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.01),
+        bbox_to_anchor=(0.5, 0.1),
         ncol=len(SELECTED_MODELS),
         frameon=False,
         fontsize=16,
@@ -147,14 +149,14 @@ def main():
     )
 
     fig.savefig(
-        OUTPUT_PATH / "mallows_dispersion_summary_3_6_5.pdf",
+        OUTPUT_PATH / "mallows_dispersion_summary_11_50_25.pdf",
         bbox_inches="tight",
         dpi=1200
     )
 
     fig.savefig(
-        OUTPUT_PATH / "mallows_selected.png",
-        dpi=900,
+        OUTPUT_PATH / "mallows_dispersion_summary_11_50_25.png",
+        dpi=1200,
         bbox_inches="tight",
     )
 

@@ -35,6 +35,7 @@ class EvaluationResult:
     
     # epsilon l1 norm
     epsilon_l1_norm: float | None = None
+    z_sum: float | None = None
 
     objective_value: float | None = None
     loss_value: float | None = None
