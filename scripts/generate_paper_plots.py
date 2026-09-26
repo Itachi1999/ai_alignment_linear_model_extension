@@ -7,16 +7,16 @@ from ai_alignment_linear_model_extension.visualization.utils import ParameterNam
 
 
 def main():
-    path = r"paper_results\mallows_dispersion\20260922_002854\trials.csv"
+    path = r"paper_results\lamda_variation\20260923_165626\trials.csv"
     CSV_PATH = Path(path)
-    OUTPUT_PATH = Path("paper/figures/mallows_dispersion")
+    OUTPUT_PATH = Path("paper/figures/lambda_variation")
     if Path(OUTPUT_PATH).exists() is False:
         Path(OUTPUT_PATH).mkdir(parents=True, exist_ok=True)
 
     SELECTED_MODELS = [
         "LP2",
         "LP3",
-        "Linear"
+        # "Linear"
     ]
 
     df = pd.read_csv(CSV_PATH)
@@ -48,8 +48,8 @@ def main():
 
     fig, axes = plt.subplots(
         1,
-        4,
-        figsize=(16.0, 4.0),
+        3,
+        figsize=(12.0, 4.0),
         sharex=True,
         # gridspec_kw={
         #     "hspace": 0.10,
@@ -58,11 +58,14 @@ def main():
     )
 
     plots = [
-        # ("z_sum", r"Inversion Parameter ($u$)", r"$\sum_{(a,b)\in P}u_{ab}$"),
-        ("violation_percentage", "Total Violations", "Violation rate (%)"),
-        ("po_violation_percentage", "PO Violations", "Violation rate (%)"),
-        ("pmc_violation_percentage", "Majority Violations", "Violation rate (%)"),
-        ("epsilon_l1_norm", "Candidate-wise slack", r"$\|\varepsilon\|_1$"),
+        ("z_sum", r"Margin Shortfall", r"Margin Shortfall") ,
+        # r"$\sum_{(a,b)\in P}u_{ab}$"),
+        ("violation_percentage", "Total Violations", "Total Violations"),
+        # "Violation rate (%)"),
+        # ("po_violation_percentage", "PO Violations", "Violation rate (%)"),
+        # ("pmc_violation_percentage", "Majority Violations", "Violation rate (%)"),
+        ("epsilon_l1_norm", "Total Slack", "Total Slack") 
+        #  r"$\|\varepsilon\|_1$"),
     ]
 
     for ax, (column, title, ylabel) in zip(axes, plots):
@@ -87,20 +90,20 @@ def main():
             # legend=False,
         )
         ax.yaxis.get_offset_text().set_fontsize(12)
-        ax.set_title(
-            title,
-            fontsize=18,
-            pad=6,
-        )
+        # ax.set_title(
+        #     title,
+        #     fontsize=18,
+        #     pad=6,
+        # )
 
         ax.set_xlabel(
-            ParameterNameMapping.NORM_PHI.label,
-            fontsize=16,
+            ParameterNameMapping.LAMBDA_LP3.label,
+            fontsize=18,
         )
 
         ax.set_ylabel(
             ylabel,
-            fontsize=16,
+            fontsize=18,
         )
 
         ax.tick_params(
@@ -128,17 +131,17 @@ def main():
 
     handles, labels = axes[0].get_legend_handles_labels()
 
-    fig.legend(
-        handles,
-        labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 0.1),
-        ncol=len(SELECTED_MODELS),
-        frameon=False,
-        fontsize=16,
-        handlelength=2.5,
-        columnspacing=1.8,
-    )
+    # fig.legend(
+    #     handles,
+    #     labels,
+    #     loc="upper center",
+    #     bbox_to_anchor=(0.5, 0.1),
+    #     ncol=len(SELECTED_MODELS),
+    #     frameon=False,
+    #     fontsize=16,
+    #     handlelength=2.5,
+    #     columnspacing=1.8,
+    # )
 
     fig.subplots_adjust(
         left=0.055,
@@ -149,13 +152,13 @@ def main():
     )
 
     fig.savefig(
-        OUTPUT_PATH / "mallows_dispersion_summary_11_50_25.pdf",
+        OUTPUT_PATH / "lambda_variation_summary_3_25_10.pdf",
         bbox_inches="tight",
         dpi=1200
     )
 
     fig.savefig(
-        OUTPUT_PATH / "mallows_dispersion_summary_11_50_25.png",
+        OUTPUT_PATH / "lambda_variation_summary_3_25_10.png",
         dpi=1200,
         bbox_inches="tight",
     )
