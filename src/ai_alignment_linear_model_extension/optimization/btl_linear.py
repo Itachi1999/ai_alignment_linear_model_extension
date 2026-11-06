@@ -132,6 +132,7 @@ class BTLLinearModel:
             log_likelihood=-float(result.fun),
             converged=bool(result.success),
             iterations=int(result.nit),
+            learned_theta=self.theta
         )
         
 
@@ -286,4 +287,5 @@ class BTLPartialLinearModel:
             log_likelihood=-float(result.fun),
             converged=bool(result.success),
             iterations=int(result.nit),
+            learned_theta=self.theta,
         )

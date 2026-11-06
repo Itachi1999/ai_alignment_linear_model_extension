@@ -315,4 +315,5 @@ class BTLResult:
     log_likelihood: float
     converged: bool
     iterations: int
+    learned_theta: np.ndarray | None = None
 
