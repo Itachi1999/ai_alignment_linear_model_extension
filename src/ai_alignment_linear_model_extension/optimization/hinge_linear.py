@@ -4,11 +4,12 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.optimize import minimize
 from scipy.special import expit
-
+from sklearn.svm import LinearSVC
 from ai_alignment_linear_model_extension.models.btl import BTLResult
 from ai_alignment_linear_model_extension.models.election import Election, Alternative
 from ai_alignment_linear_model_extension.preference_graph.marginal_matrix import MarginalMatrix
-
+import warnings
+from sklearn.exceptions import ConvergenceWarning
     
 class HingeLinearModel:
     """
@@ -90,6 +91,44 @@ class HingeLinearModel:
                 )
 
         return float(loss)
+
+    def build_pairwise_data(self):
+        elections = self.elections
+        marginal_matrices = self.marginal_matrices
+
+
+        X, y, weights = [], [], []
+
+        for election, matrix in zip(elections, marginal_matrices):
+            ids = list(matrix.alternative_ids)
+
+            for i, a in enumerate(ids):
+                for b in ids[i + 1:]:
+
+                    difference = self._features[a] - self._features[b]
+
+                    count_ab = (
+                        matrix.weight(a, b) * election.num_voters
+                    )
+                    count_ba = (
+                        matrix.weight(b, a) * election.num_voters
+                    )
+
+                    if count_ab > 0:
+                        X.append(difference)
+                        y.append(1)
+                        weights.append(count_ab)
+
+                    if count_ba > 0:
+                        X.append(difference)
+                        y.append(-1)
+                        weights.append(count_ba)
+
+        return (
+            np.asarray(X, dtype=np.float64),
+            np.asarray(y, dtype=np.float64),
+            np.asarray(weights, dtype=np.float64),
+        )
     
     def fit(
         self,
@@ -97,31 +136,63 @@ class HingeLinearModel:
         tol: float = 1e-6
         ) -> BTLResult:
         
-        def optimization_loss(
-            theta: np.ndarray,
-        ) -> float:
-            return self.hinge_loss(theta)
+        # def optimization_loss(
+        #     theta: np.ndarray,
+        # ) -> float:
+        #     return self.hinge_loss(theta)
+        # constraints = [
+        #     {
+        #         "type": "ineq",
+        #         "fun": lambda theta: 1.0 - np.max(np.abs(theta)),
+        #     }
+        # ]
+        
+        # result = minimize(
+        #     optimization_loss,
+        #     x0=np.zeros(self.dimension),
+        #     method="SLSQP",
+        #     constraints=constraints,
+        #     options={
+        #         "maxiter": max_iter,
+        #         "ftol": tol,
+        #     },
+        # )
+        
+        X_train, y_train, sample_weights = self.build_pairwise_data()
+        W = np.sum(sample_weights)
+        reg_strength = 1e-3
+        if self.margin <= 0 or reg_strength <= 0 or W <= 0:
+            raise ValueError("eta, reg_strength, and total weight must be positive.")
 
-        constraints = [
-            {
-                "type": "ineq",
-                "fun": lambda theta: 1.0 - np.max(np.abs(theta)),
-            }
-        ]
+        C = 1.0 / (reg_strength * self.margin * W)
 
-        result = minimize(
-            optimization_loss,
-            x0=np.zeros(self.dimension),
-            method="SLSQP",
-            constraints=constraints,
-            options={
-                "maxiter": max_iter,
-                "ftol": tol,
-            },
+        classifier = LinearSVC(
+            penalty="l2",
+            loss="hinge",
+            dual=True,
+            C=C,
+            fit_intercept=False,
+            max_iter=max_iter,
+            tol=tol,
+            random_state=42,
         )
 
-        self.theta = np.asarray(
-            result.x,
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", ConvergenceWarning)
+
+            classifier.fit(
+                X_train,
+                y_train,
+                sample_weight=sample_weights,
+            )
+
+        converged = not any(
+            issubclass(w.category, ConvergenceWarning)
+            for w in caught
+        )
+        
+        self.theta = self.margin * np.asarray(
+            classifier.coef_.ravel(),
             dtype=float,
         ).copy()
         
@@ -130,11 +201,19 @@ class HingeLinearModel:
             for alt in self.alternatives
         }
 
+        margins = y_train * (X_train @ self.theta)
+
+        hinge_loss = (
+            np.sum(
+                sample_weights * np.maximum(0.0, self.margin - margins)
+            ) / W
+        )
+
         return BTLResult(
             scores=scores.copy(),
-            log_likelihood=-float(result.fun),
-            converged=bool(result.success),
-            iterations=int(result.nit),
+            log_likelihood=-float(hinge_loss),
+            converged= converged,
+            iterations=int(np.max(classifier.n_iter_)),
             learned_theta=self.theta,
         )
         
@@ -231,53 +310,153 @@ class HingePartialLinearModel:
 
         return float(loss)
 
+    def build_pairwise_data(self):
+        elections = self.elections
+        marginal_matrices = self.marginal_matrices
+
+
+        X, y, weights = [], [], []
+
+        for election, matrix in zip(elections, marginal_matrices):
+            ids = list(matrix.alternative_ids)
+
+            for i, a in enumerate(ids):
+                for b in ids[i + 1:]:
+
+                    difference = self._features[a] - self._features[b]
+
+                    count_ab = (
+                        matrix.weight(a, b) * election.num_voters
+                    )
+                    count_ba = (
+                        matrix.weight(b, a) * election.num_voters
+                    )
+
+                    if count_ab > 0:
+                        X.append(difference)
+                        y.append(1)
+                        weights.append(count_ab)
+
+                    if count_ba > 0:
+                        X.append(difference)
+                        y.append(-1)
+                        weights.append(count_ba)
+
+        return (
+            np.asarray(X, dtype=np.float64),
+            np.asarray(y, dtype=np.float64),
+            np.asarray(weights, dtype=np.float64),
+        )
+
+
     def fit(
         self,
         max_iter: int = 1000,
         tol: float = 1e-6,
     ) -> BTLResult:
 
-        def optimization_loss(
-            theta: np.ndarray,
-        ) -> float:
-            return self.hinge_loss(theta)
+        # def optimization_loss(
+        #     theta: np.ndarray,
+        # ) -> float:
+        #     return self.hinge_loss(theta)
 
-        constraints = [
-            {
-                "type": "ineq",
-                "fun": lambda theta: (
-                    1.0 - np.max(np.abs(theta))
-                ),
-            }
-        ]
+        # constraints = [
+        #     {
+        #         "type": "ineq",
+        #         "fun": lambda theta: (
+        #             1.0 - np.max(np.abs(theta))
+        #         ),
+        #     }
+        # ]
 
-        result = minimize(
-            optimization_loss,
-            x0=np.zeros(self.dimension),
-            method="SLSQP",
-            constraints=constraints,
-            options={
-                "maxiter": max_iter,
-                "ftol": tol,
-            },
+        # result = minimize(
+        #     optimization_loss,
+        #     x0=np.zeros(self.dimension),
+        #     method="SLSQP",
+        #     constraints=constraints,
+        #     options={
+        #         "maxiter": max_iter,
+        #         "ftol": tol,
+        #     },
+        # )
+
+        X_train, y_train, sample_weights = self.build_pairwise_data()
+        W = np.sum(sample_weights)
+        reg_strength = 1e-3
+        if self.margin <= 0 or reg_strength <= 0 or W <= 0:
+            raise ValueError("eta, reg_strength, and total weight must be positive.")
+        
+        C = 1.0 / (reg_strength * self.margin * W)
+        
+        classifier = LinearSVC(
+            penalty="l2",
+            loss="hinge",
+            dual=True,
+            C=C,
+            fit_intercept=False,
+            max_iter=max_iter,
+            tol=tol,
+            random_state=42,
         )
-
-        self.theta = np.asarray(
-            result.x,
+        
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", ConvergenceWarning)
+        
+            classifier.fit(
+                X_train,
+                y_train,
+                sample_weight=sample_weights,
+            )
+        
+        converged = not any(
+            issubclass(w.category, ConvergenceWarning)
+            for w in caught
+        )
+        
+        self.theta = self.margin * np.asarray(
+            classifier.coef_.ravel(),
             dtype=float,
         ).copy()
-
+        
         scores = {
             alternative_id: float(
                 self.theta @ features
             )
             for alternative_id, features in self._features.items()
         }
-
+        
+        margins = y_train * (X_train @ self.theta)
+        
+        hinge_loss = (
+            np.sum(
+                sample_weights * np.maximum(0.0, self.margin - margins)
+            ) / W
+        )
+        
         return BTLResult(
-            scores=scores,
-            log_likelihood=-float(result.fun),
-            converged=bool(result.success),
-            iterations=int(result.nit),
+            scores=scores.copy(),
+            log_likelihood=-float(hinge_loss),
+            converged= converged,
+            iterations=int(np.max(classifier.n_iter_)),
             learned_theta=self.theta,
         )
+
+        # self.theta = np.asarray(
+        #     result.x,
+        #     dtype=float,
+        # ).copy()
+
+        # scores = {
+        #     alternative_id: float(
+        #         self.theta @ features
+        #     )
+        #     for alternative_id, features in self._features.items()
+        # }
+
+        # return BTLResult(
+        #     scores=scores,
+        #     log_likelihood=-float(result.fun),
+        #     converged=bool(result.success),
+        #     iterations=int(result.nit),
+        #     learned_theta=self.theta,
+        # )

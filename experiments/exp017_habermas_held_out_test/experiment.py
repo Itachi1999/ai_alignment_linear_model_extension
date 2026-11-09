@@ -147,7 +147,7 @@ class Habermas100QuestionsLP(BaseExperiment):
             )
             
         timers.append(timer.result)
-        
+        logging.info(f"LPs are solved")
         with Timer("BTL Model Fitting") as timer:
             blt_model = BTLPartialLinearModel(
                 elections=self._training_election_list,
@@ -155,6 +155,7 @@ class Habermas100QuestionsLP(BaseExperiment):
             )
             btl_linear_result = blt_model.fit(max_iter=self._cfg.optimization.max_iterations)
         timers.append(timer.result)
+        logging.info(f"BTL Model FItting TIme: {timer.result.elapsed_time:.6f} seconds and Convergence: {btl_linear_result.converged}, Iterations: {btl_linear_result.iterations}, Final Log-Likelihood: {btl_linear_result.log_likelihood}")
         
         with Timer("Hinge Model Fitting") as timer:
             hinge_model = HingePartialLinearModel(
@@ -165,8 +166,8 @@ class Habermas100QuestionsLP(BaseExperiment):
             hinge_linear_result = hinge_model.fit(max_iter=self._cfg.optimization.max_iterations)
         timers.append(timer.result)
         
-        logging.info(f"BTL Convergence: {btl_linear_result.converged}, Iterations: {btl_linear_result.iterations}, Final Log-Likelihood: {btl_linear_result.log_likelihood}")
-        logging.info(f"Hinge Convergence: {hinge_linear_result.converged}, Iterations: {hinge_linear_result.iterations}, Final Log-Likelihood: {hinge_linear_result.log_likelihood}")
+        # logging.info(f"BTL Convergence: {btl_linear_result.converged}, Iterations: {btl_linear_result.iterations}, Final Log-Likelihood: {btl_linear_result.log_likelihood}")
+        logging.info(f"Hinge Elapsed Time: {timer.result.elapsed_time:.6f} seconds and Convergence: {hinge_linear_result.converged}, Iterations: {hinge_linear_result.iterations}, Final Log-Likelihood: {hinge_linear_result.log_likelihood}")
         
         # Evaluation of the models on the training data
         with Timer("Old Train LP Evaluation") as timer:
