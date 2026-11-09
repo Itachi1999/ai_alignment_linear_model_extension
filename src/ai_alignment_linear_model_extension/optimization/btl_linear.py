@@ -88,35 +88,102 @@ class BTLLinearModel:
 
         return float(ll)
     
+    def build_pairwise_data(self):
+        X, y, weights = [], [], []
+
+        for a in self.marginal_matrix.alternative_ids:
+            for b in self.marginal_matrix.alternative_ids:
+                if a == b:
+                    continue
+                
+                difference = self._features[a] - self._features[b]
+                count_ab = (
+                    self.marginal_matrix.weight(a, b) * self.num_voters
+                )
+                count_ba = (
+                    self.marginal_matrix.weight(b, a) * self.num_voters
+                )
+
+                if count_ab > 0:
+                    X.append(difference)
+                    y.append(1)
+                    weights.append(count_ab)
+
+                if count_ba > 0:
+                    X.append(difference)
+                    y.append(-1)
+                    weights.append(count_ba)
+
+        return (
+            np.asarray(X, dtype=np.float64),
+            np.asarray(y, dtype=np.float64),
+            np.asarray(weights, dtype=np.float64),
+        )
+    
     def fit(
         self,
         max_iter: int = 1000,
         tol: float = 1e-6
         ) -> BTLResult:
         
-        def negative_log_likelihood(
-            theta: np.ndarray,
-        ) -> float:
-            return -self.log_likelihood(theta)
+        # def negative_log_likelihood(
+        #     theta: np.ndarray,
+        # ) -> float:
+        #     return -self.log_likelihood(theta)
 
-        constraints = [
-            {
-                "type": "ineq",
-                "fun": lambda theta: 1.0 - np.max(np.abs(theta)),
-            }
-        ]
+        # constraints = [
+        #     {
+        #         "type": "ineq",
+        #         "fun": lambda theta: 1.0 - np.max(np.abs(theta)),
+        #     }
+        # ]
+
+        # result = minimize(
+        #     negative_log_likelihood,
+        #     x0=np.zeros(self.dimension),
+        #     method="SLSQP",
+        #     constraints=constraints,
+        #     options={
+        #         "maxiter": max_iter,
+        #         "ftol": tol,
+        #     },
+        # )
+
+        reg_strength: float = 1e-3
+        X_train, y_train, sample_weights = self.build_pairwise_data()
+        total_weight = np.sum(sample_weights)
+        def objective_and_gradient(theta):
+            margins = y_train * (X_train @ theta)
+
+            loss = np.sum(
+                sample_weights * np.logaddexp(0.0, -margins)
+            ) / total_weight
+
+            loss += 0.5 * reg_strength * np.dot(theta, theta)
+
+            coefficients = (
+                -sample_weights
+                * y_train
+                * expit(-margins)
+                / total_weight
+            )
+
+            gradient = X_train.T @ coefficients + reg_strength * theta
+
+            return loss, gradient
 
         result = minimize(
-            negative_log_likelihood,
-            x0=np.zeros(self.dimension),
-            method="SLSQP",
-            constraints=constraints,
+            fun=objective_and_gradient,
+            x0=np.zeros(X_train.shape[1]),
+            method="L-BFGS-B",
+            jac=True,
             options={
                 "maxiter": max_iter,
-                "ftol": tol,
+                "ftol": 1e-9,
+                "gtol": tol,
             },
         )
-
+        
         self.theta = np.asarray(
             result.x,
             dtype=float,

@@ -93,36 +93,30 @@ class HingeLinearModel:
         return float(loss)
 
     def build_pairwise_data(self):
-        elections = self.elections
-        marginal_matrices = self.marginal_matrices
-
-
         X, y, weights = [], [], []
 
-        for election, matrix in zip(elections, marginal_matrices):
-            ids = list(matrix.alternative_ids)
+        for a in self.marginal_matrix.alternative_ids:
+            for b in self.marginal_matrix.alternative_ids:
+                if a == b:
+                    continue
+                
+                difference = self._features[a] - self._features[b]
+                count_ab = (
+                    self.marginal_matrix.weight(a, b) * self.num_voters
+                )
+                count_ba = (
+                    self.marginal_matrix.weight(b, a) * self.num_voters
+                )
 
-            for i, a in enumerate(ids):
-                for b in ids[i + 1:]:
+                if count_ab > 0:
+                    X.append(difference)
+                    y.append(1)
+                    weights.append(count_ab)
 
-                    difference = self._features[a] - self._features[b]
-
-                    count_ab = (
-                        matrix.weight(a, b) * election.num_voters
-                    )
-                    count_ba = (
-                        matrix.weight(b, a) * election.num_voters
-                    )
-
-                    if count_ab > 0:
-                        X.append(difference)
-                        y.append(1)
-                        weights.append(count_ab)
-
-                    if count_ba > 0:
-                        X.append(difference)
-                        y.append(-1)
-                        weights.append(count_ba)
+                if count_ba > 0:
+                    X.append(difference)
+                    y.append(-1)
+                    weights.append(count_ba)
 
         return (
             np.asarray(X, dtype=np.float64),
@@ -206,7 +200,7 @@ class HingeLinearModel:
         hinge_loss = (
             np.sum(
                 sample_weights * np.maximum(0.0, self.margin - margins)
-            ) / W
+            ) / W + reg_strength * np.sum(self.theta ** 2)
         )
 
         return BTLResult(
