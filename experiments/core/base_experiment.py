@@ -28,14 +28,14 @@ class BaseExperiment(ABC):
         self,
         trial: int,
         seed: int,
-    ) -> TrialResult:
+    ) -> TrialResult | tuple[TrialResult, TrialResult]:
         ...
 
     @abstractmethod
     def summarize(
         self,
-        trials: list[TrialResult],
-    ) -> ExperimentResult:
+        trials: list[TrialResult] | tuple[list[TrialResult], list[TrialResult]],
+    ) -> ExperimentResult | tuple[ExperimentResult, ExperimentResult]:
         ...
 
 
@@ -46,7 +46,7 @@ class ExperimentRunner:
         experiment: BaseExperiment,
         num_trials: int,
         seed: int,
-    ) -> ExperimentResult:
+    ) -> ExperimentResult | tuple[ExperimentResult, ExperimentResult]:
 
         if num_trials >= 2:
             logging.info(
@@ -56,8 +56,9 @@ class ExperimentRunner:
             )
         experiment.setup()
 
-        trials: list[TrialResult] = []
+        trials: list[TrialResult] | list[tuple[TrialResult, TrialResult]] = []
         if num_trials <= 1:
+            trial_result  = None
             try:
                 trial_result = experiment.run_trial(
                     trial=0,
@@ -65,7 +66,7 @@ class ExperimentRunner:
                 )
             except Exception as e:
                 logging.exception(
-                    "Error occurred while running trial %d: %s", trial, e
+                    "Error occurred while running trial %d: %s", trial_result, e
                 )
                 trial_result = TrialResult(
                 trial=0,
@@ -269,7 +270,7 @@ class ExperimentLogger:
 
         logger = logging.getLogger()
 
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
 
         logger.handlers.clear()
 

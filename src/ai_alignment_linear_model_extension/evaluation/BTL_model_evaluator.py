@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import scipy
 
+from ai_alignment_linear_model_extension.models.alternative import Alternative
 from ai_alignment_linear_model_extension.evaluation.evaluation_result import (
     EvaluationResult,
 )
@@ -33,17 +34,31 @@ class BTLModelEvaluator:
         self,
         graph: PreferenceGraph,
         result: BTLResult,
+        testing: bool = False,
+        alternatives: tuple[Alternative, ...] | None = None
     ) -> EvaluationResult:
 
         violated_edges: list = []
 
         po_violations = 0
         pmc_violations = 0
-
+        
+        features = {}
+        if alternatives is not None:
+            features = {
+                alternative.id: alternative.features
+                for alternative in alternatives
+            }
+        
+        score1 = 0.0
+        score2 = 0.0
         for edge in graph.edges:
-
-            score1 = result.scores.get(edge.source, 0.0)
-            score2 = result.scores.get(edge.target, 0.0)
+            if testing:
+                score1 = result.learned_theta @ features[edge.source]
+                score2 = result.learned_theta @ features[edge.target]
+            else:
+                score1 = result.scores.get(edge.source, 0.0)
+                score2 = result.scores.get(edge.target, 0.0)
             prob = scipy.special.expit(score1 - score2)
             # if np.isclose(prob, 0.5) or (prob < 0.5):
             if score1 < (score2 + self.eta):

@@ -122,9 +122,9 @@ class Habermas100QuestionsLP(BaseExperiment):
                 graph=combined_dag,
             )
         timers.append(timer.result)
-        logging.debug("OLD LP:")
-        logging.debug(f"Epsilon: {old_lp_result.epsilon}")
-        logging.debug(f"Epsilon Norm: {old_lp_result.objective_value}")
+        # logging.debug("OLD LP:")
+        # logging.debug(f"Epsilon: {old_lp_result.epsilon}")
+        # logging.debug(f"Epsilon Norm: {old_lp_result.objective_value}")
         
         with Timer("LP3 Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
@@ -134,11 +134,11 @@ class Habermas100QuestionsLP(BaseExperiment):
             )
             
         timers.append(timer.result)
-        logging.debug("NEW LP")
-        logging.debug(f"Epsilon: {new_lp_result.epsilon}")
-        logging.debug(f"Epsilon Norm: {np.sum(np.abs(list(new_lp_result.epsilon.values())), dtype=float)}")
-        logging.debug(f"z value: {new_lp_result.z}")
-        logging.debug(f"Objetive Value: {new_lp_result.objective_value}")
+        # logging.debug("NEW LP")
+        # logging.debug(f"Epsilon: {new_lp_result.epsilon}")
+        # logging.debug(f"Epsilon Norm: {np.sum(np.abs(list(new_lp_result.epsilon.values())), dtype=float)}")
+        # logging.debug(f"z value: {new_lp_result.z}")
+        # logging.debug(f"Objetive Value: {new_lp_result.objective_value}")
         
         with Timer("BTL Model Fitting") as timer:
             blt_model = BTLPartialLinearModel(
@@ -370,36 +370,6 @@ class Habermas100QuestionsLP(BaseExperiment):
             trials=tuple(trials),
             statistics=statistics,
         )
-
-# def run_sweep(cfg: DictConfig) -> ParameterSweepResult:
-#     results: dict[float, ExperimentResult] = {}
-
-#     runner = ExperimentRunner()
-
-#     data_path = Path(cfg.data_path)
-#     json_file_paths = list(data_path.glob("*.json"))
-
-#     logging.info(
-#         f"Starting Habermas data with {len(json_file_paths)} questions" 
-#     )
-#     for i in trange(len(json_file_paths), desc="Question LP Running"):
-#         json_file_path = json_file_paths[i]
-        
-#         experiment = Habermas100QuestionsLP(
-#             cfg=cfg,
-#             path=json_file_path,
-#         )
-#         result = runner.run(
-#             experiment=experiment,
-#             num_trials=cfg.num_trials,
-#             seed=cfg.seed,
-#         )
-#         results[i] = result
-
-#     return ParameterSweepResult(
-#         parameter_name=ParameterNameMapping.QUESTION_NUMBER.label,
-#         results=results,
-#     )
 
 
 @hydra.main(

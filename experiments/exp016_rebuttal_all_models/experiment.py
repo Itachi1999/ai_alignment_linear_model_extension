@@ -27,6 +27,7 @@ from ai_alignment_linear_model_extension.preference_graph.FAS import FeedbackArc
 from ai_alignment_linear_model_extension.optimization.extension_linear_model import LinearModelSolver
 from ai_alignment_linear_model_extension.optimization.linear_KT_min_model import KTMinLinearModelSolver
 from ai_alignment_linear_model_extension.optimization.btl_linear import BTLLinearModel
+from ai_alignment_linear_model_extension.optimization.hinge_linear import HingeLinearModel
 from ai_alignment_linear_model_extension.evaluation.linear_model_evaluator import LinearModelEvaluator
 from ai_alignment_linear_model_extension.evaluation.BTL_model_evaluator import BTLModelEvaluator
 from ai_alignment_linear_model_extension.visualization.violation_plots import (
@@ -109,9 +110,9 @@ class AllModelsComparisonMallows(BaseExperiment):
                 graph=fas_result.dag,
             )
         timers.append(timer.result)
-        logging.debug("OLD LP:")
-        logging.debug(f"Epsilon: {old_lp_result.epsilon}")
-        logging.debug(f"Epsilon Norm: {old_lp_result.objective_value}")
+        # logging.debug("OLD LP:")
+        # logging.debug(f"Epsilon: {old_lp_result.epsilon}")
+        # logging.debug(f"Epsilon Norm: {old_lp_result.objective_value}")
         
         with Timer("LP3 Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
@@ -120,11 +121,11 @@ class AllModelsComparisonMallows(BaseExperiment):
             )
             
         timers.append(timer.result)
-        logging.debug("NEW LP")
-        logging.debug(f"Epsilon: {new_lp_result.epsilon}")
-        logging.debug(f"Epsilon Norm: {np.sum(np.abs(list(new_lp_result.epsilon.values())), dtype=float)}")
-        logging.debug(f"z value: {new_lp_result.z}")
-        logging.debug(f"Objetive Value: {new_lp_result.objective_value}")
+        # logging.debug("NEW LP")
+        # logging.debug(f"Epsilon: {new_lp_result.epsilon}")
+        # logging.debug(f"Epsilon Norm: {np.sum(np.abs(list(new_lp_result.epsilon.values())), dtype=float)}")
+        # logging.debug(f"z value: {new_lp_result.z}")
+        # logging.debug(f"Objetive Value: {new_lp_result.objective_value}")
         
         with Timer("BTL Model Fitting") as timer:
             blt_model = BTLLinearModel(
@@ -132,6 +133,15 @@ class AllModelsComparisonMallows(BaseExperiment):
                 marginal_matrix=marginal_matrix,
             )
             btl_linear_result = blt_model.fit(max_iter=self._cfg.optimization.max_iterations)
+        timers.append(timer.result)
+        
+        with Timer("Hinge Model Fitting") as timer:
+            hinge_model = HingeLinearModel(
+                election=election,
+                marginal_matrix=marginal_matrix,
+                margin=self._cfg.optimization.eta,
+            )
+            hinge_result = hinge_model.fit(max_iter=self._cfg.optimization.max_iterations)
         timers.append(timer.result)
         
         # with Timer("BTL Hinge Model Fitting") as timer:
@@ -163,6 +173,13 @@ class AllModelsComparisonMallows(BaseExperiment):
             btl_evaluation = self._btl_evaluator.evaluate(
                 graph=fas_result.dag,
                 result=btl_linear_result,
+            )
+        timers.append(timer.result)
+        
+        with Timer("Hinge Evaluation") as timer:
+            hinge_evaluation = self._btl_evaluator.evaluate(
+                graph=fas_result.dag,
+                result=hinge_result,
             )
         timers.append(timer.result)
         
@@ -207,62 +224,18 @@ class AllModelsComparisonMallows(BaseExperiment):
                 ModelType.EPSILON_LP: old_evaluation,
                 ModelType.KT_MIN_LP: new_evaluation,
                 ModelType.BTL_LINEAR: btl_evaluation,
+                ModelType.LINEAR_HINGE: hinge_evaluation,
             },
             fas_size=len(fas_result.removed_edges),
             timers=tuple(timers),
         )
-
-    # def sanity_check(self, alternatives, learned_theta, k, removed_edges = None):
-    #     voter_utilities = {
-    #         alternative.id: float(
-    #             self._theta_0 @ alternative.features
-    #         )
-    #         for alternative in alternatives
-    #     }
-        
-    #     # Step 2: Select and order the common k alternatives
-        
-    #     po_sequence = tuple(
-    #         sorted(
-    #             voter_utilities,
-    #             key=voter_utilities.get,
-    #             reverse=True,
-    #         )[: k]
-    #     )
-        
-    #     alternative_utilities = {
-    #         alternative.id: float(
-    #             learned_theta @ alternative.features
-    #         )
-    #         for alternative in alternatives
-    #     }
-    #     violations_in_main_sequence = [
-    #         (a, b)
-    #         for a, b in zip(po_sequence, po_sequence[1:])
-    #         if alternative_utilities[a] <= alternative_utilities[b]
-    #     ]
-    #     logging.debug(f"The PO sequence: {po_sequence}")
-    #     logging.debug(
-    #         f"Number of PO violations in main sequence: {len(violations_in_main_sequence)}, the violations are: {violations_in_main_sequence}"
-    #     )
-        
-        
-        
-    #     removed_po = [
-    #         edge
-    #         for edge in removed_edges
-    #         if edge.edge_type == PreferenceEdgeType.UNANIMOUS
-    #     ]
-    #     logging.debug(
-    #         f"PO Edges removed in FAS: {len(removed_po)}"
-    #     )
 
     def summarize(
         self,
         trials: list[TrialResult],
     ) -> ExperimentResult:
         statistics:dict[ModelType, ExperimentStatistics] = {}
-        for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP, ModelType.BTL_LINEAR]:
+        for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP, ModelType.BTL_LINEAR, ModelType.LINEAR_HINGE]:
             objectives = [
                 trial.evaluation_result[model].objective_value 
                 for trial in trials
