@@ -91,6 +91,9 @@ class KTMinLinearModelSolver:
             for edge in graph.edges
         }
 
+        # m = len(alternatives)
+        # E = len(graph.edges)
+
         # Constraints
 
         constraints: list[cp.Constraint] = []
@@ -118,6 +121,21 @@ class KTMinLinearModelSolver:
                 linear_score + z[(a, b)]
                 >= self._eta
             )
+        # edges = list(graph.edges)
+        # X_diff = np.vstack([
+        #     features[edge.source] - features[edge.target]
+        #     for edge in edges
+        # ])
+
+        # epsilon_diff = cp.hstack([
+        #     epsilon[edge.source] - epsilon[edge.target]
+        #     for edge in edges
+        # ])
+
+        # constraints.append(X_diff @ theta + epsilon_diff >= self._eta)
+
+        # z_vector = cp.hstack([ z[(edge.source, edge.target)] for edge in edges])
+        # constraints.append(X_diff @ theta + z_vector >= self._eta)
 
         # |epsilon_a| <= t_a
         for alternative in alternatives:
@@ -129,12 +147,22 @@ class KTMinLinearModelSolver:
             cp.norm_inf(theta) <= 1
         )
 
+        # This is done becuase the cp varaibles are in dictionary format
+        # epsilon_vector = cp.hstack([epsilon[alternative.id] for alternative in alternatives])
+        # t_vector = cp.hstack([t[alternative.id] for alternative in alternatives])
+
+        # constraints.append(cp.abs(epsilon_vector) <= t_vector)
+        # constraints.append(cp.norm_inf(theta) <= 1)
+
         # Objective         
         objective = cp.Minimize(
             cp.sum(list(t.values()))
             + self._lambda * cp.sum(list(z.values()))
         )
-
+        # objective = cp.Minimize(
+        #     cp.sum(t_vector)
+        #     + self._lambda * cp.sum(z_vector)
+        # )
         problem = cp.Problem(
             objective,
             constraints,
