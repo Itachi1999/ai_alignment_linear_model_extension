@@ -1,37 +1,38 @@
 name: exp018_mallows_held_out_test
 summary: Synthetic experiment with Gaussian candidate data and Normalized Mallows model preference generator. Here, we check the PO and PMC violations of the old epsilon LP and the new KT min LP model and the BTL linear model and also the weighted KT min LP model and the Borda KT min LP model.  
 
-num_trials: 20
+num_trials: 10
 seed: 42
 
 data:
-  num_voters: 3
-  training_num_alternatives: 15
-  testing_num_alternatives: 10
-  dimension: 5
+  training_num_voters: 11
+  testing_num_voters: 7
+  training_num_alternatives: 100
+  testing_num_alternatives: 30
+  dimension: 25
   mean: 0.0
   std: 1.0
 
 optimization:
   eta: 1e-5
-  lambda_: 10
+  lambda_: 100
   solver: HIGHS
-  max_iterations: 100
+  max_iterations: 2000
   tolerance: 1e-6
 
 dispersion:
   grid:
-    - 0.0
-    - 0.1
-    - 0.2
-    - 0.3
-    - 0.4
+    # - 0.0
+    # - 0.1
+    # - 0.2
+    # - 0.3
+    # - 0.4
     - 0.5
     - 0.6
-    - 0.7
-    - 0.8
-    - 0.9
-    - 1.0
+    # - 0.7
+    # - 0.8
+    # - 0.9
+    # - 1.0
 
 logging:
   save_summary: true

@@ -87,7 +87,7 @@ class AllModelsComparisonMallows(BaseExperiment):
         with Timer("Training Data Generation") as timer:
             training_election = self._data_generator.generate(
                 num_alternatives=self._cfg.data.training_num_alternatives,
-                num_voters=self._cfg.data.num_voters,
+                num_voters=self._cfg.data.training_num_voters,
                 dimension=self._cfg.data.dimension
             )
         timers.append(timer.result)
@@ -104,13 +104,13 @@ class AllModelsComparisonMallows(BaseExperiment):
         logging.debug(f"FAS Ordering {training_fas_result.ordering}")
         logging.debug(f"Removed Edges: {training_fas_result.removed_edges}")
 
-        with Timer("LP2 Solve") as timer:
-            old_lp_result = self._old_lp_solver.solve(
-                election=training_election,
-                graph=training_fas_result.dag,
-            )
-        timers.append(timer.result)
-        logging.info(f"LP2 Solve time: {timer.result.elapsed_time:.6f} seconds")
+        # with Timer("LP2 Solve") as timer:
+        #     old_lp_result = self._old_lp_solver.solve(
+        #         election=training_election,
+        #         graph=training_fas_result.dag,
+        #     )
+        # timers.append(timer.result)
+        # logging.info(f"LP2 Solve time: {timer.result.elapsed_time:.6f} seconds")
         
         with Timer("LP3 Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
@@ -129,24 +129,24 @@ class AllModelsComparisonMallows(BaseExperiment):
         timers.append(timer.result)
         logging.info(f"BTL Model Fitting time: {timer.result.elapsed_time:.6f} seconds, Converged: {btl_linear_result.converged}, Iterations: {btl_linear_result.iterations}, loss: {btl_linear_result.log_likelihood:.6f}")
         
-        with Timer("Hinge Model Fitting") as timer:
-            hinge_model = HingeLinearModel(
-                election=training_election,
-                marginal_matrix=training_marginal_matrix,
-                margin=self._cfg.optimization.eta,
-            )
-            hinge_result = hinge_model.fit(max_iter=self._cfg.optimization.max_iterations)
-        timers.append(timer.result)
-        logging.info(f"Hinge Model Fitting time: {timer.result.elapsed_time:.6f} seconds, Converged: {hinge_result.converged}, Iterations: {hinge_result.iterations}, loss: {hinge_result.log_likelihood:.6f}")        
+        # with Timer("Hinge Model Fitting") as timer:
+        #     hinge_model = HingeLinearModel(
+        #         election=training_election,
+        #         marginal_matrix=training_marginal_matrix,
+        #         margin=self._cfg.optimization.eta,
+        #     )
+        #     hinge_result = hinge_model.fit(max_iter=self._cfg.optimization.max_iterations)
+        # timers.append(timer.result)
+        # logging.info(f"Hinge Model Fitting time: {timer.result.elapsed_time:.6f} seconds, Converged: {hinge_result.converged}, Iterations: {hinge_result.iterations}, loss: {hinge_result.log_likelihood:.6f}")        
 
 
-        with Timer("Training Old LP Evaluation") as timer:
-            training_old_evaluation = self._evaluator.evaluate(
-                election=training_election,
-                graph=training_fas_result.dag,
-                result=old_lp_result,
-            )
-        timers.append(timer.result)
+        # with Timer("Training Old LP Evaluation") as timer:
+        #     training_old_evaluation = self._evaluator.evaluate(
+        #         election=training_election,
+        #         graph=training_fas_result.dag,
+        #         result=old_lp_result,
+        #     )
+        # timers.append(timer.result)
         
         with Timer("Training New LP Evaluation") as timer:
             training_new_evaluation = self._evaluator.evaluate(
@@ -163,12 +163,12 @@ class AllModelsComparisonMallows(BaseExperiment):
             )
         timers.append(timer.result)
         
-        with Timer("Training Hinge Evaluation") as timer:
-            training_hinge_evaluation = self._btl_evaluator.evaluate(
-                graph=training_fas_result.dag,
-                result=hinge_result,
-            )
-        timers.append(timer.result)
+        # with Timer("Training Hinge Evaluation") as timer:
+        #     training_hinge_evaluation = self._btl_evaluator.evaluate(
+        #         graph=training_fas_result.dag,
+        #         result=hinge_result,
+        #     )
+        # timers.append(timer.result)
         
 
         training_trial_result = TrialResult(
@@ -176,10 +176,10 @@ class AllModelsComparisonMallows(BaseExperiment):
             seed=seed,
             # lp_result=lp_result,
             evaluation_result={
-                ModelType.EPSILON_LP: training_old_evaluation,
+                # ModelType.EPSILON_LP: training_old_evaluation,
                 ModelType.KT_MIN_LP: training_new_evaluation,
                 ModelType.BTL_LINEAR: training_btl_evaluation,
-                ModelType.LINEAR_HINGE: training_hinge_evaluation,
+                # ModelType.LINEAR_HINGE: training_hinge_evaluation,
             },
             fas_size=len(training_fas_result.removed_edges),
             timers=tuple(timers),
@@ -188,7 +188,7 @@ class AllModelsComparisonMallows(BaseExperiment):
         with Timer("Testing Data Generation") as timer:
             testing_election = self._data_generator.generate(
                 num_alternatives=self._cfg.data.testing_num_alternatives,
-                num_voters=self._cfg.data.num_voters,
+                num_voters=self._cfg.data.testing_num_voters,
                 dimension=self._cfg.data.dimension
             )
         timers.append(timer.result)
@@ -205,14 +205,14 @@ class AllModelsComparisonMallows(BaseExperiment):
         logging.debug(f"FAS Ordering {testing_fas_result.ordering}")
         logging.debug(f"Removed Edges: {testing_fas_result.removed_edges}")
         
-        with Timer("Testing Old LP Evaluation") as timer:
-            testing_old_evaluation = self._evaluator.evaluate(
-                election=testing_election,
-                graph=testing_fas_result.dag,
-                result=old_lp_result,
-                testing=True,
-            )
-        timers.append(timer.result)
+        # with Timer("Testing Old LP Evaluation") as timer:
+        #     testing_old_evaluation = self._evaluator.evaluate(
+        #         election=testing_election,
+        #         graph=testing_fas_result.dag,
+        #         result=old_lp_result,
+        #         testing=True,
+        #     )
+        # timers.append(timer.result)
         
         with Timer("Testing New LP Evaluation") as timer:
             testing_new_evaluation = self._evaluator.evaluate(
@@ -232,24 +232,24 @@ class AllModelsComparisonMallows(BaseExperiment):
             )
         timers.append(timer.result)
         
-        with Timer("Testing Hinge Evaluation") as timer:
-            testing_hinge_evaluation = self._btl_evaluator.evaluate(
-                graph=testing_fas_result.dag,
-                result=hinge_result,
-                testing=True,
-                alternatives=testing_election.alternatives
-            )
-        timers.append(timer.result)
+        # with Timer("Testing Hinge Evaluation") as timer:
+        #     testing_hinge_evaluation = self._btl_evaluator.evaluate(
+        #         graph=testing_fas_result.dag,
+        #         result=hinge_result,
+        #         testing=True,
+        #         alternatives=testing_election.alternatives
+        #     )
+        # timers.append(timer.result)
         
         testing_trial_result = TrialResult(
             trial=trial,
             seed=seed,
             # lp_result=lp_result,
             evaluation_result={
-                ModelType.EPSILON_LP: testing_old_evaluation,
+                # ModelType.EPSILON_LP: testing_old_evaluation,
                 ModelType.KT_MIN_LP: testing_new_evaluation,
                 ModelType.BTL_LINEAR: testing_btl_evaluation,
-                ModelType.LINEAR_HINGE: testing_hinge_evaluation,
+                # ModelType.LINEAR_HINGE: testing_hinge_evaluation,
             },
             fas_size=len(testing_fas_result.removed_edges),
             timers=tuple(timers),
@@ -275,7 +275,7 @@ class AllModelsComparisonMallows(BaseExperiment):
     def extract_summary(self, trials: list[TrialResult]) -> ExperimentResult:
         statistics:dict[ModelType, ExperimentStatistics] = {}
         if len(trials) <= 1:
-            for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP, ModelType.BTL_LINEAR, ModelType.LINEAR_HINGE]:
+            for model in [ModelType.KT_MIN_LP, ModelType.BTL_LINEAR]:
                 only_trail_eval = trials[0].evaluation_result[model]
                 statistics[model] =  ExperimentStatistics(
                     num_trials=len(trials),
@@ -316,7 +316,7 @@ class AllModelsComparisonMallows(BaseExperiment):
                     std_z_support_percentage=0 if only_trail_eval.z_support_percentage else None,    
                     )
         else:
-            for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP, ModelType.BTL_LINEAR, ModelType.LINEAR_HINGE]:
+            for model in [ModelType.KT_MIN_LP, ModelType.BTL_LINEAR]:
                 objectives = [
                     trial.evaluation_result[model].objective_value 
                     for trial in trials
@@ -499,13 +499,13 @@ def main(cfg: DictConfig) -> None:
     )
     logger.save_figure(
         figure,
-        filename=f"mallows_dispersion_summary_{exp_cfg.data.num_voters}_{exp_cfg.data.training_num_alternatives}_{exp_cfg.data.dimension}.pdf",
+        filename=f"mallows_dispersion_summary_{exp_cfg.data.training_num_voters}_{exp_cfg.data.training_num_alternatives}_{exp_cfg.data.dimension}.pdf",
         output_dir=training_output_dir,
         dpi=600
     )
     logger.save_figure(
         figure,
-        filename=f"mallows_dispersion_summary_{exp_cfg.data.num_voters}_{exp_cfg.data.training_num_alternatives}_{exp_cfg.data.dimension}.png",
+        filename=f"mallows_dispersion_summary_{exp_cfg.data.training_num_voters}_{exp_cfg.data.training_num_alternatives}_{exp_cfg.data.dimension}.png",
         output_dir=training_output_dir, dpi=600)
     logger.save_plots(training_plots.plots, training_output_dir)
     training_plots.clear()
@@ -521,11 +521,11 @@ def main(cfg: DictConfig) -> None:
     )
     logger.save_figure(
         figure,
-        filename=f"mallows_dispersion_summary_{exp_cfg.data.num_voters}_{exp_cfg.data.testing_num_alternatives}_{exp_cfg.data.dimension}.pdf",
+        filename=f"mallows_dispersion_summary_{exp_cfg.data.testing_num_voters}_{exp_cfg.data.testing_num_alternatives}_{exp_cfg.data.dimension}.pdf",
         output_dir=testing_output_dir, dpi=600)
     logger.save_figure(
         figure,
-        filename=f"mallows_dispersion_summary_{exp_cfg.data.num_voters}_{exp_cfg.data.testing_num_alternatives}_{exp_cfg.data.dimension}.png",
+        filename=f"mallows_dispersion_summary_{exp_cfg.data.testing_num_voters}_{exp_cfg.data.testing_num_alternatives}_{exp_cfg.data.dimension}.png",
         output_dir=testing_output_dir, dpi=600)
     logger.save_plots(testing_plots.plots, testing_output_dir)
     testing_plots.clear()
