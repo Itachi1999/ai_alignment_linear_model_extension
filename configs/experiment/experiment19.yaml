@@ -1,0 +1,41 @@
+name: exp019_hollender_generalization
+summary: Synthetic experiment with Gaussian candidate data and Normalized Mallows model preference generator. Here, we check the PO and PMC violations of the old epsilon LP and the new KT min LP model and the BTL linear model and also the weighted KT min LP model and the Borda KT min LP model.  
+
+num_trials: 5
+seed: 42
+
+data:
+  training_num_voters: 11
+  testing_num_voters: 11
+  training_num_alternatives: 100
+  testing_num_alternatives: 70
+  dimension: 50
+  mean: 0.0
+  std: 1.0
+
+optimization:
+  eta: 1e-5
+  lambda_: 10
+  solver: HIGHS
+  max_iterations: 2000
+  tolerance: 1e-6
+
+dispersion:
+  grid:
+    # - 0.0
+    # - 0.1
+    # - 0.2
+    # - 0.3
+    # - 0.4
+    - 0.5
+    - 1.0
+    # - 0.7
+    # - 0.8
+    # - 0.9
+    # - 1.0
+
+logging:
+  save_summary: true
+  save_trials: true
+  save_figures: true
+  save_tables: true

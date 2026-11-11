@@ -42,39 +42,20 @@ class UniformPreferenceGenerator(PreferenceGenerator):
     """
     Generates independent uniformly random preferences.
     """
-
     def __init__(self, seed: int | None = None):
         self._rng = np.random.default_rng(seed)
-
-    def generate(
-        self,
-        num_voters: int,
-        alternatives: tuple[Alternative, ...],
-    ) -> tuple[Voter, ...]:
-
+    def generate(self, num_voters: int, alternatives: tuple[Alternative, ...]) -> tuple[Voter, ...]:
         if num_voters <= 0:
             raise ValueError("Number of voters must be positive.")
-
         voters = []
         alternative_ids = tuple(alt.id for alt in alternatives)
-
         for voter_id in range(num_voters):
-
-            ranking = tuple(
-                self._rng.permutation(alternative_ids).tolist()
-            )
-
-            voters.append(
-                Voter(
-                    id=voter_id,
-                    ranking=ranking,
-                )
-            )
-
+            ranking = tuple(self._rng.permutation(alternative_ids).tolist())
+            voters.append(Voter(id=voter_id, ranking=ranking))
         return tuple(voters)
 
 
-class LinearPreferenceGenerator(PreferenceGenerator):
+class AlmostLinearPreferenceGenerator(PreferenceGenerator):
     def __init__(
         self,
         theta_0: np.ndarray,
@@ -84,30 +65,22 @@ class LinearPreferenceGenerator(PreferenceGenerator):
     ) -> None:
         if not 0.0 <= noisy_alternative_fraction<= 1.0:
             raise ValueError("noisy_voter_fraction must be in [0, 1].")
-
         self.theta_0 = theta_0
         self.noise_std = noise_std
         self.noisy_alternative_fraction = noisy_alternative_fraction
         self.rng = np.random.default_rng(seed)
 
-    def generate(
-        self,
-        alternatives: tuple[Alternative, ...],
-        num_voters: int,
-    ) -> tuple[Voter, ...]:
-
+    def generate(self, alternatives: tuple[Alternative, ...], num_voters: int) -> tuple[Voter, ...]:
         if num_voters <= 0:
             raise ValueError("Number of voters must be positive.")
 
         num_alternatives = len(alternatives)
         voters = []
-
         # Linear utility: <theta_0, x_a>
         utility = {
             alt.id : self.theta_0 @ alt.features
             for alt in alternatives
         }
-
         noisy_alternative_ids = set(
             self.rng.choice(
                 tuple(utility.keys()),
@@ -121,7 +94,6 @@ class LinearPreferenceGenerator(PreferenceGenerator):
         num_noisy = int(
             round(num_alternatives * self.noisy_alternative_fraction)
         )
-
         for voter_id in range(num_voters):
             #TODO: Mallows Model
             for alt_id in noisy_alternative_ids:
@@ -384,4 +356,33 @@ class SOCPreferenceGenerator(PreferenceGenerator):
                         ranking=tuple(proper_ranking)
                     )
                 )
+        return tuple(voters)
+
+class LinearPreferenceGenerator(PreferenceGenerator):
+    def __init__(self, theta_0:np.ndarray):
+        super().__init__()
+        self.theta_0 = theta_0
+        self.voter_thetas: list[np.ndarray] = []
+
+    def generate_thetas(self, num_voters:int, noise_std:float, seed:int = 42):
+        rng = np.random.default_rng(seed)
+        self.voter_thetas = [
+            self.theta_0 + rng.normal(loc=0.0, scale=noise_std, size=self.theta_0.shape)
+            for _ in range(num_voters)
+        ]
+        return self.voter_thetas
+    
+    def generate(self, alternatives: tuple[Alternative, ...], num_voters: int) -> tuple[Voter, ...]:
+        if not self.voter_thetas or len(self.voter_thetas) != num_voters:
+            raise ValueError("Voter thetas must be generated before generating preferences.")
+
+        voters = []
+        for voter_id in range(num_voters):
+            theta = self.voter_thetas[voter_id]
+            utilities = {
+                alt.id: float(theta @ alt.features)
+                for alt in alternatives
+            }
+            ranking = tuple(sorted(utilities, key=utilities.get, reverse=True))
+            voters.append(Voter(id=voter_id, ranking=ranking))
         return tuple(voters)

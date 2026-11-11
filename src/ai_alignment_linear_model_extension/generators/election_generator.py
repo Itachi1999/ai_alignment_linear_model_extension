@@ -16,29 +16,17 @@ class ElectionGenerator:
     and a ranking generator.
     """
 
-    def __init__(
-        self,
-        feature_generator: FeatureGenerator,
-        preference_generator: PreferenceGenerator,
-    ) -> None:
+    def __init__(self, feature_generator: FeatureGenerator, preference_generator: PreferenceGenerator) -> None:
         self._feature_generator = feature_generator
         self._preference_generator = preference_generator
 
-    def generate(
-        self,
-        num_alternatives: int,
-        num_voters: int,
-        dimension: int,
-    ) -> Election:
+    def generate(self, num_alternatives: int, num_voters: int, dimension: int) -> Election:
         """
         Generate a complete election.
         """
 
         # Generate alternatives
-        alternatives = self._feature_generator.generate(
-            num_alternatives=num_alternatives,
-            dimension=dimension,
-        )
+        alternatives = self._feature_generator.generate(num_alternatives=num_alternatives, dimension=dimension)
 
         # Extract alternative IDs
         alternative_ids = tuple(
@@ -47,16 +35,10 @@ class ElectionGenerator:
         )
 
         # Generate voters
-        voters = self._preference_generator.generate(
-            num_voters=num_voters,
-            alternatives=alternatives,
-        )
+        voters = self._preference_generator.generate(num_voters=num_voters, alternatives=alternatives)
 
         # Construct validated election
-        return Election(
-            alternatives=alternatives,
-            voters=voters,
-        )
+        return Election(alternatives=alternatives, voters=voters)
 
 # class SOCElectionGenerator(ElectionGenerator):
 #     """"
