@@ -5,16 +5,16 @@ num_trials: 5
 seed: 42
 
 data:
-  training_num_voters: 11
-  testing_num_voters: 11
+  training_num_voters: 7
+  testing_num_voters: 7
   training_num_alternatives: 100
-  testing_num_alternatives: 70
-  dimension: 50
+  testing_num_alternatives: 40
+  dimension: 20
   mean: 0.0
   std: 1.0
 
 optimization:
-  eta: 1e-5
+  eta: 1e-2
   lambda_: 10
   solver: HIGHS
   max_iterations: 2000
@@ -22,13 +22,17 @@ optimization:
 
 dispersion:
   grid:
-    # - 0.0
+    - 0.0
     # - 0.1
     # - 0.2
-    # - 0.3
+    - 0.3
     # - 0.4
     - 0.5
     - 1.0
+    - 1.5
+    - 2.0
+    - 3.0
+    - 7.0
     # - 0.7
     # - 0.8
     # - 0.9
