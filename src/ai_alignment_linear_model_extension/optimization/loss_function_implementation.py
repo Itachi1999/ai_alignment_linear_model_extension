@@ -17,12 +17,12 @@ class TrainableLossResult:
     original_objective: float
     converged: bool
     iterations: int
-    solve_time: float
+    # solve_time: float
     status: str
 
 
 
-class TrainableLossModel:
+class LP3TrainableLossModel:
     """
     Trainable linear reward model with candidate-specific corrections.
 
@@ -48,15 +48,16 @@ class TrainableLossModel:
         graph: PreferenceGraph,
         election: Election | None = None,
         alternatives: tuple[Alternative, ...] | None = None,
-        eta: float = 1e-8,
+        dimension: int | None = None,
+        eta: float = 1e-4,
         beta: float = 1.0,
         lambda_: float = 1.0,
         kappa: float = 1e-3,
         tau: float = 1e-4,
     ) -> None:
 
-        if not election:
-            raise ValueError("At least one election is required.")
+        # if not election:
+        #     raise ValueError("At least one election is required.")
 
         if beta <= 0:
             raise ValueError("beta must be positive.")
@@ -69,7 +70,6 @@ class TrainableLossModel:
 
         self.election = election
         self.graph = graph
-        self.alternatives = alternatives
         self.eta = eta
         self.beta = beta
         self.lambda_ = lambda_
@@ -78,6 +78,10 @@ class TrainableLossModel:
 
         # Collect all alternative features.
         self._features = {}
+
+        if alternatives is None:
+            alternatives = election.alternatives
+        self.alternatives = alternatives
 
         for alternative in alternatives:
             if alternative.id in self._features:
@@ -97,7 +101,10 @@ class TrainableLossModel:
             for i, alternative_id in enumerate(self._alternative_ids)
         }
 
-        self._dimension = elections[0].dimension
+        if election is not None:
+            self._dimension = self.election.dimension
+        else:
+            self._dimension = dimension
 
         # Extract preference edges.
         edges = list(graph.edges)
@@ -127,16 +134,18 @@ class TrainableLossModel:
 
         if self._edge_features.shape[1] != self._dimension:
             raise ValueError("Inconsistent feature dimensions.")
+        if self._edge_features.shape[0] != len(edges):
+            raise ValueError("Inconsistent number of edges.")
 
-        self.theta = np.zeros(self.dimension, dtype=np.float64)
+        self.theta = np.zeros(self._dimension, dtype=np.float64)
 
     @property
     def dimension(self) -> int:
         return self._dimension
 
-    @property
-    def num_elections(self) -> int:
-        return len(self.elections)
+    # @property
+    # def num_elections(self) -> int:
+    #     return len(self.elections)
 
     @property
     def num_alternatives(self) -> int:
@@ -152,6 +161,7 @@ class TrainableLossModel:
     ) -> tuple[float, np.ndarray]:
 
         d = self.dimension
+        E = self.graph.num_edges
 
         theta = params[:d]
         epsilon = params[d:]
@@ -178,9 +188,9 @@ class TrainableLossModel:
         # Individual objective components.
         correction = 0.5 * np.dot(epsilon, epsilon)
 
-        axiom_violation = beta * np.sum(loss_axiom)
+        axiom_violation = beta * np.sum(loss_axiom) / E
 
-        deployment_violation = lam * np.sum(loss_deployment)
+        deployment_violation = lam * np.sum(loss_deployment) / E
 
         theta_regularization = (
             0.5 * kappa * np.dot(theta, theta)
@@ -199,8 +209,8 @@ class TrainableLossModel:
 
         # Gradient with respect to theta.
         gradient_theta = (
-            -A.T @ (beta * p_axiom + lam * p_deployment)
-            + kappa * theta
+            -A.T @ (beta * p_axiom + lam * p_deployment) / E
+            + kappa * theta 
         )
 
         # Gradient with respect to epsilon.
@@ -208,12 +218,12 @@ class TrainableLossModel:
             epsilon
             - np.bincount(
                 source,
-                weights=beta * p_axiom,
+                weights=beta * p_axiom / E,
                 minlength=self.num_alternatives,
             )
             + np.bincount(
                 target,
-                weights=beta * p_axiom,
+                weights=beta * p_axiom / E,
                 minlength=self.num_alternatives,
             )
         )
@@ -235,7 +245,7 @@ class TrainableLossModel:
 
         d = self.dimension
         m = self.num_alternatives
-
+        E = self.graph.num_edges
         # Initialize both theta and epsilon to zero.
         initial_params = np.zeros(d + m, dtype=np.float64)
 
@@ -281,8 +291,8 @@ class TrainableLossModel:
 
         original_objective = (
             0.5 * np.dot(epsilon, epsilon)
-            + self.beta * np.maximum(0.0, z).sum()
-            + self.lambda_ * np.maximum(0.0, h).sum()
+            + self.beta * np.maximum(0.0, z).sum() / E
+            + self.lambda_ * np.maximum(0.0, h).sum() / E
             + 0.5 * self.kappa * np.dot(self.theta, self.theta)
         )
 
@@ -294,5 +304,5 @@ class TrainableLossModel:
             original_objective=float(original_objective),
             converged=bool(result.success),
             iterations=int(result.nit),
-            status=str(result.message),
+            status=str(result.success),
         )

@@ -1,0 +1,30 @@
+experiment:
+  name: exp021_habermas_loss_evaluation
+  summary: Synthetic experiment with Gaussian candidate data and Normalized Mallows
+    model preference generator. Here, we check the PO and PMC violations of the old
+    epsilon LP and the new KT min LP model and the BTL linear model and also the weighted
+    KT min LP model and the Borda KT min LP model.
+  num_trials: 10
+  seed: 42
+  data:
+    dimension: 768
+    mean: 0.0
+    std: 1.0
+  num_elections: 900
+  num_training_elections: 500
+  num_test_elections: 400
+  data_path: data/processed/00070_habermas/
+  optimization:
+    eta: 1.0e-05
+    lambda_: 5
+    beta: 5.0
+    kappa: 20
+    tau: 0.0001
+    solver: HIGHS
+    max_iterations: 700
+    tolerance: 1.0e-06
+  logging:
+    save_summary: true
+    save_trials: true
+    save_figures: true
+    save_tables: true

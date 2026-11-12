@@ -709,6 +709,7 @@ class ViolationPlots:
                 ModelType.KT_MIN_LP,
                 ModelType.WEIGHTED_KT_MIN_LP,
                 ModelType.BORDA_KT_MIN_LP,
+                ModelType.LP3_LOSS
             ):
                 if model_type not in trial.evaluation_result:
                     continue
@@ -863,6 +864,7 @@ class ViolationPlots:
                     ModelType.KT_MIN_LP,
                     ModelType.WEIGHTED_KT_MIN_LP,
                     ModelType.BORDA_KT_MIN_LP,
+                    ModelType.LP3_LOSS,
                 ):
                     if model_type not in trial.evaluation_result:
                         continue
