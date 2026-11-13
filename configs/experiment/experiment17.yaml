@@ -18,7 +18,7 @@ optimization:
   eta: 1e-5
   lambda_: 10
   solver: HIGHS
-  max_iterations: 2000
+  max_iterations: 20000
   tolerance: 1e-6
 
 logging:

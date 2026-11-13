@@ -131,14 +131,14 @@ class Habermas100QuestionsLP(BaseExperiment):
 
         training_combined_dag = self.combine_dags(self._training_dag_list)
         
-        with Timer("LP2 Solve") as timer:
-            old_lp_result = self._old_lp_solver.solve(
-                alternatives=self.training_alternatives,
-                dimension=self._cfg.data.dimension,
-                graph=training_combined_dag,
-            )
-        timers.append(timer.result)
-        logging.info(f"LP2 Solve time: {timer.result.elapsed_time:.6f} seconds")
+        # with Timer("LP2 Solve") as timer:
+        #     old_lp_result = self._old_lp_solver.solve(
+        #         alternatives=self.training_alternatives,
+        #         dimension=self._cfg.data.dimension,
+        #         graph=training_combined_dag,
+        #     )
+        # timers.append(timer.result)
+        # logging.info(f"LP2 Solve time: {timer.result.elapsed_time:.6f} seconds")
         
         with Timer("LP3 Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
@@ -170,14 +170,14 @@ class Habermas100QuestionsLP(BaseExperiment):
         logging.info(f"Hinge Elapsed Time: {timer.result.elapsed_time:.6f} seconds and Convergence: {hinge_linear_result.converged}, Iterations: {hinge_linear_result.iterations}, Final Log-Likelihood: {hinge_linear_result.log_likelihood}")
         
         # Evaluation of the models on the training data
-        with Timer("Old Train LP Evaluation") as timer:
-            old_training_evaluation = self._evaluator.evaluate(
-                alternatives=self.training_alternatives,
-                graph=training_combined_dag,
-                result=old_lp_result,
-                testing=False,
-            )
-        timers.append(timer.result)
+        # with Timer("Old Train LP Evaluation") as timer:
+        #     old_training_evaluation = self._evaluator.evaluate(
+        #         alternatives=self.training_alternatives,
+        #         graph=training_combined_dag,
+        #         result=old_lp_result,
+        #         testing=False,
+        #     )
+        # timers.append(timer.result)
         
         with Timer("New Train LP Evaluation") as timer:
             new_training_evaluation = self._evaluator.evaluate(
@@ -209,7 +209,7 @@ class Habermas100QuestionsLP(BaseExperiment):
             seed=seed,
             # lp_result=lp_result,
             evaluation_result={
-                ModelType.EPSILON_LP: old_training_evaluation,
+                # ModelType.EPSILON_LP: old_training_evaluation,
                 ModelType.KT_MIN_LP: new_training_evaluation,
                 ModelType.BTL_LINEAR: btl_training_evaluation,
                 ModelType.LINEAR_HINGE: hinge_training_evaluation,
@@ -251,14 +251,14 @@ class Habermas100QuestionsLP(BaseExperiment):
         
         testing_combined_dag = self.combine_dags(self._testing_dag_list)
         # Evaluation of the models on the testing data
-        with Timer("Old Test LP Evaluation") as timer:
-            old_testing_evaluation = self._evaluator.evaluate(
-                alternatives=self.testing_alternatives,
-                graph=testing_combined_dag,
-                result=old_lp_result,
-                testing=True,
-            )
-        timers.append(timer.result)
+        # with Timer("Old Test LP Evaluation") as timer:
+        #     old_testing_evaluation = self._evaluator.evaluate(
+        #         alternatives=self.testing_alternatives,
+        #         graph=testing_combined_dag,
+        #         result=old_lp_result,
+        #         testing=True,
+        #     )
+        # timers.append(timer.result)
         
         with Timer("New Test LP Evaluation") as timer:
             new_testing_evaluation = self._evaluator.evaluate(
@@ -278,7 +278,7 @@ class Habermas100QuestionsLP(BaseExperiment):
             )
         timers.append(timer.result)
         
-        with Timer("BTL Test Evaluation") as timer:
+        with Timer("Hinge Test Evaluation") as timer:
             hinge_testing_evaluation = self._btl_evaluator.evaluate(
                 testing_combined_dag,
                 hinge_linear_result,
@@ -292,7 +292,7 @@ class Habermas100QuestionsLP(BaseExperiment):
             seed=seed,
             # lp_result=lp_result,
             evaluation_result={
-                ModelType.EPSILON_LP: old_testing_evaluation,
+                # ModelType.EPSILON_LP: old_testing_evaluation,
                 ModelType.KT_MIN_LP: new_testing_evaluation,
                 ModelType.BTL_LINEAR: btl_testing_evaluation,
                 ModelType.LINEAR_HINGE: hinge_testing_evaluation,
@@ -333,7 +333,7 @@ class Habermas100QuestionsLP(BaseExperiment):
     def extract_summary(self, trials: list[TrialResult]) -> ExperimentResult:
         statistics:dict[ModelType, ExperimentStatistics] = {}
         if len(trials) <= 1:
-            for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP, ModelType.BTL_LINEAR, ModelType.LINEAR_HINGE]:
+            for model in [ModelType.BTL_LINEAR, ModelType.LINEAR_HINGE]:
                 only_trail_eval = trials[0].evaluation_result[model]
                 statistics[model] =  ExperimentStatistics(
                     num_trials=len(trials),
@@ -374,7 +374,7 @@ class Habermas100QuestionsLP(BaseExperiment):
                     std_z_support_percentage=0 if only_trail_eval.z_support_percentage else None,    
                     )
         else:
-            for model in [ModelType.EPSILON_LP, ModelType.KT_MIN_LP, ModelType.BTL_LINEAR, ModelType.LINEAR_HINGE]:
+            for model in [ModelType.KT_MIN_LP, ModelType.BTL_LINEAR, ModelType.LINEAR_HINGE]:
                 objectives = [
                     trial.evaluation_result[model].objective_value 
                     for trial in trials
