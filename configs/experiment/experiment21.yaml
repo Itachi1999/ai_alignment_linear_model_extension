@@ -5,23 +5,23 @@ num_trials: 3
 seed: 42
 
 data:
-  dimension: 300
+  dimension: 768
   mean: 0.0
   std: 1.0
 
-num_elections: 900
-num_training_elections: 500
-num_test_elections: 400
-data_path: "data/processed/00070_habermas_pca_300/"
+num_elections: 1800
+num_training_elections: 1000
+num_test_elections: 800
+data_path: "data/processed/00070_habermas/"
 
 optimization:
   eta: 1e-5
-  lambda_: 5
+  lambda_: 10
   beta: 5.0
   kappa: 20
   tau: 1e-4
   solver: HIGHS
-  max_iterations: 700
+  max_iterations: 1000
   tolerance: 1e-6
 
 logging:

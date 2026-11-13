@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import cvxpy as cp
 import numpy as np
+from scipy.sparse import coo_matrix
 
 from ai_alignment_linear_model_extension.models.election import Election, Alternative
 from ai_alignment_linear_model_extension.preference_graph.preference_graph import (
@@ -41,134 +42,230 @@ class LinearModelSolver:
 
         if election is None and alternatives is None and dimension is None:
             raise ValueError("At least one of Election or Alternatives (along with dimension must be given)")
-
+        
         if election is not None:
             d = election.dimension
             alternatives = election.alternatives
         else:
             d = dimension
 
-        # --------------------------------------------------
-        # Cache feature vectors
-        # --------------------------------------------------
+        edges = list(graph.edges)
+        alternative_ids = [alt.id for alt in alternatives]
 
-        features = {
-            alternative.id: alternative.features
-            for alternative in alternatives
+        m = len(alternative_ids)
+        E = len(edges)
+
+        id_to_idx = {
+            alt_id: i for i, alt_id in enumerate(alternative_ids)
         }
 
-        # --------------------------------------------------
-        # Decision variables
-        # --------------------------------------------------
+        X = np.vstack([
+            alt.features for alt in alternatives
+        ])
 
-        theta = cp.Variable(
-            shape=d,
-            name="theta",
-        )
+        source = np.array([
+            id_to_idx[edge.source] for edge in edges
+        ])
 
-        epsilon = {
-            alternative.id: cp.Variable(
-                name=f"epsilon_{alternative.id}"
-            )
-            for alternative in alternatives
-        }
+        target = np.array([
+            id_to_idx[edge.target] for edge in edges
+        ])
 
-        t = {
-            alternative.id: cp.Variable(
-                nonneg=True,
-                name=f"t_{alternative.id}"
-            )
-            for alternative in alternatives
-        }
 
-        # --------------------------------------------------
-        # Constraints
-        # --------------------------------------------------
+        # Pairwise feature differences: (E, d)
+        X_diff = X[source] - X[target]
 
-        constraints: list[cp.Constraint] = []
+        # Sparse incidence matrix: (E, m)
+        rows = np.repeat(np.arange(E), 2)
+        cols = np.column_stack((source, target)).ravel()
+        data = np.tile([1.0, -1.0], E)
 
-        # Preference graph constraints
+        D = coo_matrix(
+            (data, (rows, cols)),
+            shape=(E, m),
+        ).tocsr()
 
-        for edge in graph.edges:
-            # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
-            #     eta0 = self._eta
-            # else:
-            #     eta0 = 1e-2 * self._eta 
-            # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
-            x_a = features[edge.source]
-            x_b = features[edge.target]
+        theta = cp.Variable(d)
+        epsilon = cp.Variable(m)
+        t = cp.Variable(m, nonneg=True)
+        # z = cp.Variable(E, nonneg=True)
 
-            constraints.append(
-                (theta @ (x_a - x_b))
-                + (epsilon[edge.source]
-                - epsilon[edge.target])
-                >= self._eta
-            )
+        constraints = [
+            X_diff @ theta + D @ epsilon >= self._eta,
+            # z >= self._eta - X_diff @ theta,
+            epsilon <= t,
+            -epsilon <= t,
+            theta <= 1,
+            theta >= -1,
+        ]
 
-        # Absolute value constraints
-
-        for alternative in alternatives:
-
-            a = alternative.id
-
-            # constraints.append(
-            #     epsilon[a] <= t[a]
-            # )
-
-            # constraints.append(
-            #     -epsilon[a] <= t[a]
-            # )
-            constraints.append(
-                cp.abs(epsilon[a]) <= t[a]
-            ) 
-
-        constraints.append(
-            cp.norm_inf(theta) <= 1
-        )
-            
-        # --------------------------------------------------
-        # Objective
-        # --------------------------------------------------
-
-        objective = cp.Minimize(
-            cp.sum(list(t.values()))
-        )
-
-        # --------------------------------------------------
-        # Solve
-        # --------------------------------------------------
-
+        objective = cp.Minimize(cp.sum(t))
         problem = cp.Problem(
             objective,
             constraints,
         )
-
+        
+        # Solve
         problem.solve(
             solver=self._solver,
             highs_options={
-                "primal_feasibility_tolerance": 1e-10,
-                "dual_feasibility_tolerance": 1e-10,
+                "solver": "ipm"
             },
         )
         
-        if problem.status not in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:
-            raise RuntimeError(
-                f"LP solver failed with status '{problem.status}'."
-            )
-        # --------------------------------------------------
-        # Return result
-        # --------------------------------------------------
+        epsilon_dict = {
+            alt_id: float(epsilon.value[i])
+            for i, alt_id in enumerate(alternative_ids)
+        }
+
+        t_dict = {
+            alt_id: float(t.value[i])
+            for i, alt_id in enumerate(alternative_ids)
+        }
+
+        # z_dict = {
+        #     (edge.source, edge.target): float(z.value[i])
+        #     for i, edge in enumerate(edges)
+        # }
+        print(f"LP compilation time: {problem.compilation_time}, status: {problem.status}, objective value: {problem.value}, LP time: {problem.solver_stats}")
 
         return LPResult(
             theta=np.asarray(theta.value).copy(),
-            epsilon={
-                alternative.id: float(epsilon[alternative.id].value)
-                for alternative in alternatives
-            },
+            epsilon=epsilon_dict,
             objective_value=float(problem.value),
             status=str(problem.status),
-            # solver=str(self._solver),
         )
+
+        # if election is None and alternatives is None and dimension is None:
+        #     raise ValueError("At least one of Election or Alternatives (along with dimension must be given)")
+
+        # if election is not None:
+        #     d = election.dimension
+        #     alternatives = election.alternatives
+        # else:
+        #     d = dimension
+
+        # # --------------------------------------------------
+        # # Cache feature vectors
+        # # --------------------------------------------------
+
+        # features = {
+        #     alternative.id: alternative.features
+        #     for alternative in alternatives
+        # }
+
+        # # --------------------------------------------------
+        # # Decision variables
+        # # --------------------------------------------------
+
+        # theta = cp.Variable(
+        #     shape=d,
+        #     name="theta",
+        # )
+
+        # epsilon = {
+        #     alternative.id: cp.Variable(
+        #         name=f"epsilon_{alternative.id}"
+        #     )
+        #     for alternative in alternatives
+        # }
+
+        # t = {
+        #     alternative.id: cp.Variable(
+        #         nonneg=True,
+        #         name=f"t_{alternative.id}"
+        #     )
+        #     for alternative in alternatives
+        # }
+
+        # # --------------------------------------------------
+        # # Constraints
+        # # --------------------------------------------------
+
+        # constraints: list[cp.Constraint] = []
+
+        # # Preference graph constraints
+
+        # for edge in graph.edges:
+        #     # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+        #     #     eta0 = self._eta
+        #     # else:
+        #     #     eta0 = 1e-2 * self._eta 
+        #     # if edge.edge_type == PreferenceEdgeType.UNANIMOUS:
+        #     x_a = features[edge.source]
+        #     x_b = features[edge.target]
+
+        #     constraints.append(
+        #         (theta @ (x_a - x_b))
+        #         + (epsilon[edge.source]
+        #         - epsilon[edge.target])
+        #         >= self._eta
+        #     )
+
+        # # Absolute value constraints
+
+        # for alternative in alternatives:
+
+        #     a = alternative.id
+
+        #     # constraints.append(
+        #     #     epsilon[a] <= t[a]
+        #     # )
+
+        #     # constraints.append(
+        #     #     -epsilon[a] <= t[a]
+        #     # )
+        #     constraints.append(
+        #         cp.abs(epsilon[a]) <= t[a]
+        #     ) 
+
+        # constraints.append(
+        #     cp.norm_inf(theta) <= 1
+        # )
+            
+        # # --------------------------------------------------
+        # # Objective
+        # # --------------------------------------------------
+
+        # objective = cp.Minimize(
+        #     cp.sum(list(t.values()))
+        # )
+
+        # # --------------------------------------------------
+        # # Solve
+        # # --------------------------------------------------
+
+        # problem = cp.Problem(
+        #     objective,
+        #     constraints,
+        # )
+
+        # problem.solve(
+        #     solver=self._solver,
+        #     highs_options={
+        #         "primal_feasibility_tolerance": 1e-10,
+        #         "dual_feasibility_tolerance": 1e-10,
+        #     },
+        # )
+        
+        # if problem.status not in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:
+        #     raise RuntimeError(
+        #         f"LP solver failed with status '{problem.status}'."
+        #     )
+        # # --------------------------------------------------
+        # # Return result
+        # # --------------------------------------------------
+
+        # return LPResult(
+        #     theta=np.asarray(theta.value).copy(),
+        #     epsilon={
+        #         alternative.id: float(epsilon[alternative.id].value)
+        #         for alternative in alternatives
+        #     },
+        #     objective_value=float(problem.value),
+        #     status=str(problem.status),
+        #     # solver=str(self._solver),
+        # )
         # raise NotImplementedError
 
 

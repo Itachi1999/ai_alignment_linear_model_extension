@@ -9,16 +9,16 @@ data:
   mean: 0.0
   std: 1.0
 
-num_elections: 700
+num_elections: 900
 num_training_elections: 500
-num_test_elections: 200
+num_test_elections: 400
 data_path: "data/processed/00070_habermas/"
 
 optimization:
   eta: 1e-5
   lambda_: 10
   solver: HIGHS
-  max_iterations: 500
+  max_iterations: 2000
   tolerance: 1e-6
 
 logging:

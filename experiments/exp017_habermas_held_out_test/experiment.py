@@ -138,16 +138,16 @@ class Habermas100QuestionsLP(BaseExperiment):
                 graph=training_combined_dag,
             )
         timers.append(timer.result)
+        logging.info(f"LP2 Solve time: {timer.result.elapsed_time:.6f} seconds")
         
         with Timer("LP3 Solve") as timer:
             new_lp_result = self._new_lp_solver.solve(
                 alternatives=self.training_alternatives,
                 dimension=self._cfg.data.dimension,
                 graph=training_combined_dag,
-            )
-            
+            ) 
         timers.append(timer.result)
-        logging.info(f"LPs are solved")
+        logging.info(f"LP3 Solve time: {timer.result.elapsed_time:.6f} seconds")
         with Timer("BTL Model Fitting") as timer:
             blt_model = BTLPartialLinearModel(
                 elections=self._training_election_list,

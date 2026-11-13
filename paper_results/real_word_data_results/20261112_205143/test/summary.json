@@ -25,7 +25,7 @@
     },
     "Linear BTL": {
         "num_trials": 10,
-        "mean_violation_percentage": 28.719197397461656,
+        "mean_violation_percentage": 29.149197397461656,
         "std_violation_percentage": 0.9741029138102697,
         "mean_po_violation_percentage": 11.284449733718324,
         "std_po_violation_percentage": 1.0483219446859635,
